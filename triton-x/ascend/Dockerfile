@@ -76,7 +76,7 @@ RUN python -m venv ${PY3_TRITON_X} && \
     wget --no-check-certificate https://gitee.com/ascend/pytorch/releases/download/v6.0.rc3-pytorch2.3.1/torch_npu-2.3.1.post2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl && \
     ${PY3_TRITON_X}/bin/pip3 install torch_npu-2.3.1.post2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl einops && \
     rm /tmp/torch_npu -rf && \
-    chmod 775 -R ${PY3_TRITON_X}
+    chmod 777 -R ${PY3_TRITON_X}
 
 # ascend tools
 ARG ASCEND_CANN_TOOLKIT_PACKETS=https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C19SPC703/Ascend-cann-toolkit_8.0.RC3.alpha003_linux-aarch64.run?response-content-type=application/octet-stream
@@ -92,7 +92,7 @@ RUN cd ${ASCEND_BASE} && \
     #sshpass -p Triton0912*%$ scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r bytedance@60.204.158.119:/home/bytedance/triton_downloads/aarch64/npu_compiler_dir_1225.tar.gz . && \
     wget --header "Authorization: Bearer ${GITEE_TOKEN}" -O npu_compiler_aarch64.tar.gz "https://gitee.com/ascend/triton-ascend/releases/download/2024/12/30/npu_compiler_aarch64.tar.gz" && \
     tar xvfz npu_compiler_aarch64.tar.gz && \
-    chmod -R 775 npu_compiler_aarch64 && \
+    chmod -R 777 npu_compiler_aarch64 && \
     rm npu_compiler_aarch64.tar.gz
 
 # == 配置ssh private key ==
