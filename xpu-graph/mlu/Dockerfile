@@ -33,13 +33,13 @@ fi\n\
 # config language
 ENV LANG=C.UTF-8
 
+RUN python -m pip install dataclasses torch>=2.3.1 pydot pytest lintrunner
+
 # create python venv for py3-xpu_graph
 ARG PY3_XPU_GRAPH=${VENV_PATH}/xpu-graph
 RUN python -m venv ${PY3_XPU_GRAPH} && \
     ${PY3_XPU_GRAPH}/bin/pip install --upgrade pip && \
     ${PY3_XPU_GRAPH}/bin/pip3 install wheel setuptools ninja wheel pybind11 torch>=2.3.1 attrs==24.2.0 numpy==1.26.4 scipy==1.13.1 decorator==5.1.1 psutil==6.0.0 pytest==8.3.2 pytest-xdist==3.6.1 lit pandas matplotlib pyyaml dataclasses pydot lintrunner && \
-    mkdir /tmp/torch_npu && cd /tmp/torch_npu && \
-    rm /tmp/torch_npu -rf && \
     chmod 777 -R ${PY3_XPU_GRAPH}
 
 # == 配置ssh private key ==
@@ -56,8 +56,8 @@ RUN chmod 700 /root/.ssh/id_rsa && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
     mkdir -p /var/run/sshd
 
-RUN echo "source $APPS_PATH/venv/xpu-graph/bin/activate\n\
-export HTTP_PROXY=http://sys-proxy-rd-relay.byted.org:8118\n\
+# RUN echo "source $APPS_PATH/venv/xpu-graph/bin/activate\n\
+RUN echo "export HTTP_PROXY=http://sys-proxy-rd-relay.byted.org:8118\n\
 export HTTPS_PROXY=http://sys-proxy-rd-relay.byted.org:8118\n\
 export FTP_PROXY=http://sys-proxy-rd-relay.byted.org:8118\n\
 " >> ~/.bashrc_ascend && \
