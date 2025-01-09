@@ -64,8 +64,9 @@ ENV LANG=C.UTF-8
 # export FTP_PROXY=http://sys-proxy-rd-relay.byted.org:8118\n\
 # " >> ~/.bashrc_ascend && \
 # echo ". ~/.bashrc_ascend" >> ~/.bashrc
-
+RUN apt-get update && \
+    apt-get install -y openssh-server
 # 设置sshd自启动
-# CMD ["/usr/sbin/sshd", "-D"]
+CMD ["/usr/sbin/sshd", "-D"]
 WORKDIR /host
 # ENTRYPOINT ["/bin/bash"]
