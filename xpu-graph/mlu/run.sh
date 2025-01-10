@@ -109,7 +109,8 @@ if [ -z "$OLD_ID" ]; then
     docker exec --user $USER $ID bash -c "git config --global user.email \"$GIT_EMAIL\""
     #docker cp ./gitconfig $ID:/home/$USER/.ssh
 
-    docker exec --user root $ID bash -c " cat /root/.bashrc_ascend >> /home/$USER/.bashrc"
+    docker exec --user root $ID bash -c "cat /root/.bashrc_ascend >> /home/$USER/.bashrc"
+    docker exec --user $USER $ID bash -c "echo export LD_LIBRARY_PATH='\$LD_LIBRARY_PATH':/usr/local/neuware/lib64 >> /home/$USER/.bashrc"
 
     # golang config
     if [ -f ~/.gitconfig ]; then
