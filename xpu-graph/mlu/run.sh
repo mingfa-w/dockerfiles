@@ -39,7 +39,7 @@ done
 CONTAINER_NAME=$CONTAINER_NAME.$PORT.$CORE_NUM
 
 # docker_in_docker=" --net=host --privileged -v /var/run/docker.sock:/var/run/docker.sock -v $(which docker):/bin/docker "
-docker_in_docker=" -p 2605:340:cd51:4b00:6487:4fa6:bd78:6701:$PORT:22 \
+docker_in_docker=" -p 2605:340:cd51:4b00:8f29:6cfb:ff12:f616:$PORT:22 \
                 --ipc=host --pid=host --privileged=true \
                 --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
                 -v /var/run/docker.sock:/var/run/docker.sock \
