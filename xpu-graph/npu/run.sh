@@ -39,22 +39,26 @@ done
 CONTAINER_NAME=$CONTAINER_NAME.$PORT.$CORE_NUM
 
 # docker_in_docker=" --net=host --privileged -v /var/run/docker.sock:/var/run/docker.sock -v $(which docker):/bin/docker "
-docker_in_docker=" -p 2605:340:cd51:4b00:8f29:6cfb:ff12:f616:$PORT:22 \
-                --ipc=host --pid=host --privileged=true \
+docker_in_docker=" -p $PORT:22 \
                 --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
                 -v /var/run/docker.sock:/var/run/docker.sock \
                 -v $(which docker):/bin/docker "
 # echo $docker_in_docker ====; exit 0
 # docker_run_flag=" --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all --cap-add=SYS_PTRACE --security-opt seccomp=unconfined "
-docker_run_flag=" -v /tmp/.X11-unix:/tmp/.X11-unix \
-                -e DISPLAY=$DISPLAY -e GDK_SCALE -e GDK_DPI_SCALE \
-                -v /dev:/dev -v /usr/bin/cnmon:/usr/bin/cnmon \
-                --shm-size=20gb --cap-add=SYS_PTRACE "
+docker_run_flag=" --shm-size=20gb --cap-add=SYS_PTRACE \
+                -v /usr/local/dcmi:/usr/local/dcmi \
+                -v /usr/local/bin/npu-smi:/usr/local/bin/npu-smi \
+                -v /usr/local/Ascend/driver/lib64:/usr/local/Ascend/driver/lib64 \
+                -v /usr/local/Ascend/driver/version.info:/usr/local/Ascend/driver/version.info \
+                --device=/dev/davinci$CORE_NUM:/dev/davinci$CORE_NUM \
+                --device=/dev/davinci_manager:/dev/davinci_manager \
+                --device=/dev/devmm_svm:/dev/devmm_svm \
+                --device=/dev/hisi_hdc:/dev/hisi_hdc "
 
 MOUNT_DIR=$HOME
 MOUNT_DIR_ASCEND=" -v /data00:/data00 \
                 -v /data01:/data01 \
-                -v /data02:/data02 "
+                -v /data06:/data06 "
 
 GROUP=`id -g -n`
 GROUPID=`id -g`
