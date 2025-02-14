@@ -1,5 +1,5 @@
 #!/bin/bash
-version="0.0.0"
+version="ok0.0.0"
 domain="hub.byted.org"
 # namespace="base"
 namespace="tritonx"
