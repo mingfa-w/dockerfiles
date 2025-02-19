@@ -20,7 +20,7 @@ ENV HTTP_PROXY=${http_proxy} \
 RUN apt-get update && \
     apt-get install -y adduser sudo vim  tmux net-tools iputils-ping && \
     apt-get install -y wget gdb tree bash-completion curl sshpass locales openssh-server \
-    #clang lld lldb ninja-build ccache libssl-dev clang-format build-essential jq \
+    clang lld lldb ninja-build ccache libssl-dev clang-format build-essential jq \
         > /dev/null && \
     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists && \
     locale-gen en_US.UTF-8 && \
@@ -60,7 +60,7 @@ RUN mkdir -p /tmp/torch && cd /tmp/torch && \
     pip3 install torch-2.3.1+cpu-cp39-cp39-linux_x86_64.whl && \
     wget --no-check-certificate https://gitee.com/ascend/pytorch/releases/download/v6.0.0-pytorch2.3.1/torch_npu-2.3.1.post4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl && \
     pip3 install torch_npu-2.3.1.post4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl && \
-    pip3 install triton==2.0.0 && \
+    pip3 install triton==2.0.0 xgrammar==0.1.11 && \
     rm /tmp/torch -rf
 
 # == 配置ssh private key ==
@@ -105,6 +105,7 @@ export HTTPS_PROXY=http://sys-proxy-rd-relay.byted.org:8118\n\
 export FTP_PROXY=http://sys-proxy-rd-relay.byted.org:8118\n\
 " >> ~/.bashrc_ascend && \
 echo ". ~/.bashrc_ascend" >> ~/.bashrc
+RUN chmod -R a+wr /usr/local/Ascend/ascend-toolkit/
 
 # 设置sshd自启动
 CMD ["/usr/sbin/sshd", "-D"]
