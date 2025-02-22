@@ -56,9 +56,9 @@ docker_run_flag=" --shm-size=20gb --cap-add=SYS_PTRACE \
                 --device=/dev/hisi_hdc:/dev/hisi_hdc "
 
 MOUNT_DIR=$HOME
-MOUNT_DIR_ASCEND=" -v /data00:/data00 \
-                -v /data01:/data01 \
-                -v /data06:/data06 "
+# MOUNT_DIR_ASCEND=" -v /data00:/data00 \
+#                 -v /data01:/data01 \
+#                 -v /data06:/data06 "
 
 GROUP=`id -g -n`
 GROUPID=`id -g`
