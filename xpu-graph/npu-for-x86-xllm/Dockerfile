@@ -10,6 +10,7 @@ EXPOSE 22
 ARG APPS_PATH=/opt/apps
 ARG CODE_PATH=${APPS_PATH}/code
 ARG VENV_PATH=${APPS_PATH}/venv
+ARG ARCH=x86_64
 ARG http_proxy
 ARG ftp_proxy
 ARG https_proxy
@@ -149,6 +150,15 @@ RUN mkdir -p ${CODE_PATH} && \
 #     cd /tmp/xpu_ops/publish && \
 #     bash custom_opp_debian_x86_64.run && \
 #     pip3 install .
+
+# ascend tools
+ARG ASCEND_CANN=8.0.0.alpha003
+RUN mkdir /tmp/ascend_tool && cd /tmp/ascend_tool && \
+    wget -O toolkit.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C20SPC703/Ascend-cann-toolkit_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
+    bash toolkit.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force && \
+    wget -O kernels.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C20SPC703/Ascend-cann-kernels-910b_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
+    bash kernels.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force && \
+    rm -rf /tmp/ascend_tool
 
 COPY libascend_hal.so /tmp/
 RUN . ~/.bashrc && cd /tmp && \

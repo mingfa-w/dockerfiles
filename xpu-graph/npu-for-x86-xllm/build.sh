@@ -17,7 +17,7 @@ cp ~/code/seed/xpu_ops/ . -rf
 #   curl -u bytedance:Bytedance123\!\@\# -O ftp://download.cambricon.com:8821/product/MLU500/0.22.0/pytorch2.1.0_v1.24.1/wheel/torch-2.1.0-cp310-cp310-linux_x86_64.whl
 # fi
 
-DOCKER_BUILDKIT=1 docker build --progress=plain $proxy_param $base_image_param -t $image . -f Dockerfile
+DOCKER_BUILDKIT=1 docker build --progress=plain $proxy_param $base_image_param $ascend_param -t $image . -f Dockerfile
 cd ${cur_dir}
 rm ${script_dir}/id_rsa*
 # docker push $image
