@@ -51,7 +51,7 @@ docker_in_docker=" -p $PORT:22 \
                 -v $(which docker):/bin/docker "
 # echo $docker_in_docker ====; exit 0
 # docker_run_flag=" --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all --cap-add=SYS_PTRACE --security-opt seccomp=unconfined "
-docker_run_flag=" --shm-size=20gb --cap-add=SYS_PTRACE \
+docker_run_flag=" --privileged --shm-size=20gb --cap-add=SYS_PTRACE \
                 -v /usr/local/dcmi:/usr/local/dcmi \
                 -v /usr/local/bin/npu-smi:/usr/local/bin/npu-smi \
                 -v /usr/local/Ascend/driver/lib64:/usr/local/Ascend/driver/lib64 \
@@ -126,9 +126,9 @@ if [ -z "$OLD_ID" ]; then
 
     # for ascend
     docker exec --user root $ID bash -c " cat /root/.bashrc_ascend >> /home/$USER/.bashrc"
-    docker exec --user $USER $ID bash -c " mkdir -p /home/$USER/.triton"
-    docker exec --user root $ID bash -c " sshpass -p $userPasswd scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r root@localhost:/root/.triton/json /home/$USER/.triton/"
-    docker exec --user root $ID bash -c " sshpass -p $userPasswd scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r root@localhost:/root/.triton/nvidia /home/$USER/.triton/"
+    # docker exec --user $USER $ID bash -c " mkdir -p /home/$USER/.triton"
+    # docker exec --user root $ID bash -c " sshpass -p $userPasswd scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r root@localhost:/root/.triton/json /home/$USER/.triton/"
+    # docker exec --user root $ID bash -c " sshpass -p $userPasswd scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r root@localhost:/root/.triton/nvidia /home/$USER/.triton/"
 
     # golang config
     if [ -f ~/.gitconfig ]; then

@@ -97,6 +97,12 @@ RUN apt update && apt install -y bison && \
 ENV HADOOP_HDFS_HOME=/opt/tiger/yarn_deploy/hadoop SHELL=/bin/zsh LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/tiger/yarn_deploy/hadoop/lib/native:${JAVA_HOME}/jre/lib/amd64/server:/opt/tiger/ss_lib/so BUILD_BY_MLX_IMAGE_CENTER=1 JAVA_HOME=/opt/tiger/jdk/jdk1.8 HADOOP_CONF_DIR=/opt/tiger/yarn_deploy/hadoop/conf SPARK_HOME=/opt/spark3 PATH=$PATH:/opt/mlx_deploy/miniconda3/envs/mlx/bin:/opt/mlx_deploy/miniconda3/envs/mlx_py2/bin:${JAVA_HOME}/bin:/opt/mlx_deploy/sbin:/opt/mlx_deploy/bin:/usr/sbin:/usr/bin:/usr/local/bin:/opt/tiger/ss_bin:/opt/tiger/ss_lib/bin:/opt/common_tools:/opt/tiger/yarn_deploy/hadoop/bin:/opt/tiger/yarn_deploy/hive/bin SPARK_ON_K8S=true HADOOP_HOME=/opt/tiger/yarn_deploy/hadoop
 ENV PYTHONPATH=$PYTHONPATH:/opt/tiger/arnold/arnold_entrypoint:/opt/tiger/arnold_toolbox:/opt/tiger/api_common:/opt/tiger/load:/opt/tiger/studio_loader
 
+RUN echo "source $ASCEND_BASE/ascend-toolkit/set_env.sh\n\
+export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$ASCEND_BASE/driver/lib64/driver:$ASCEND_BASE/driver/lib64/common\n\
+" >> ~/.bashrc_ascend && \
+echo ". ~/.bashrc_ascend" >> ~/.bashrc
+
+
 # 设置sshd自启动
 CMD ["/usr/sbin/sshd", "-D"]
 
