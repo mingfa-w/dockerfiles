@@ -55,10 +55,6 @@ RUN  apt-get update && apt-get -y install libffi-dev libsqlite3-dev build-essent
 #  WORKDIR /opt/spark3/work-dir 
 #  RUN chmod g+w /opt/spark3/work-dir 
 
-# # USER tiger
-ENV HADOOP_HDFS_HOME=/opt/tiger/yarn_deploy/hadoop SHELL=/bin/zsh LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/tiger/yarn_deploy/hadoop/lib/native:${JAVA_HOME}/jre/lib/amd64/server:/opt/tiger/ss_lib/so BUILD_BY_MLX_IMAGE_CENTER=1 JAVA_HOME=/opt/tiger/jdk/jdk1.8 HADOOP_CONF_DIR=/opt/tiger/yarn_deploy/hadoop/conf SPARK_HOME=/opt/spark3 PATH=$PATH:/opt/mlx_deploy/miniconda3/envs/mlx/bin:/opt/mlx_deploy/miniconda3/envs/mlx_py2/bin:${JAVA_HOME}/bin:/opt/mlx_deploy/sbin:/opt/mlx_deploy/bin:/usr/sbin:/usr/bin:/usr/local/bin:/opt/tiger/ss_bin:/opt/tiger/ss_lib/bin:/opt/common_tools:/opt/tiger/yarn_deploy/hadoop/bin:/opt/tiger/yarn_deploy/hive/bin SPARK_ON_K8S=true HADOOP_HOME=/opt/tiger/yarn_deploy/hadoop
-ENV PYTHONPATH=$PYTHONPATH:/opt/tiger/arnold/arnold_entrypoint:/opt/tiger/arnold_toolbox:/opt/tiger/api_common:/opt/tiger/load:/opt/tiger/studio_loader
-
 RUN mkdir -p /tmp/torch && cd /tmp/torch && \
     # . ${PY3_XLLM}/bin/activate && \
     pip3 uninstall -y torch torch_npu && \
@@ -72,11 +68,10 @@ RUN mkdir -p /tmp/torch && cd /tmp/torch && \
 ARG ASCEND_CANN=8.0.0.alpha003
 RUN mkdir /tmp/ascend_tool && cd /tmp/ascend_tool && \
     wget -O toolkit.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C20SPC703/Ascend-cann-toolkit_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
-    bash toolkit.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force && \
+    bash toolkit.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force  && \
     wget -O kernels.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C20SPC703/Ascend-cann-kernels-910b_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
-    bash kernels.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force && \
-    rm -rf /tmp/ascend_tool && \
-    chmod -R 777 /usr/local/Ascend/ascend-toolkit
+    bash kernels.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force  && \
+    rm -rf /tmp/ascend_tool
 
 ARG TORCH_PACKAGE=2.3.1
 RUN pip3 install --extra-index-url https://download.pytorch.org/whl/cpu/ torch==${TORCH_PACKAGE}
@@ -85,6 +80,22 @@ RUN mkdir -p /tmp/torch_npu && cd /tmp/torch_npu && \
     wget --no-check-certificate ${TORCH_NPU_PACKAGE} && \
     pip3 install *.whl && \
     rm /tmp/torch_npu -rf
+
+RUN apt update && apt install -y bison && \
+    mkdir /tmp/glibc && cd /tmp/glibc && \
+    wget https://ftp.gnu.org/gnu/glibc/glibc-2.29.tar.xz && \
+    tar -xf glibc-2.29.tar.xz && \
+    cd glibc-2.29 && mkdir build && cd build && \
+    unset LD_LIBRARY_PATH && \
+    ../configure --prefix=/usr/local --disable-sanity-checks && \
+    make -j$(nproc) && make install && \
+    cp /usr/local/lib/libm-2.29.so /lib/x86_64-linux-gnu/ && \
+    ln -sf /lib/x86_64-linux-gnu/libm-2.29.so /lib/x86_64-linux-gnu/libm.so.6 && \
+    rm -rf /tmp/glibc
+
+# # USER tiger
+ENV HADOOP_HDFS_HOME=/opt/tiger/yarn_deploy/hadoop SHELL=/bin/zsh LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/tiger/yarn_deploy/hadoop/lib/native:${JAVA_HOME}/jre/lib/amd64/server:/opt/tiger/ss_lib/so BUILD_BY_MLX_IMAGE_CENTER=1 JAVA_HOME=/opt/tiger/jdk/jdk1.8 HADOOP_CONF_DIR=/opt/tiger/yarn_deploy/hadoop/conf SPARK_HOME=/opt/spark3 PATH=$PATH:/opt/mlx_deploy/miniconda3/envs/mlx/bin:/opt/mlx_deploy/miniconda3/envs/mlx_py2/bin:${JAVA_HOME}/bin:/opt/mlx_deploy/sbin:/opt/mlx_deploy/bin:/usr/sbin:/usr/bin:/usr/local/bin:/opt/tiger/ss_bin:/opt/tiger/ss_lib/bin:/opt/common_tools:/opt/tiger/yarn_deploy/hadoop/bin:/opt/tiger/yarn_deploy/hive/bin SPARK_ON_K8S=true HADOOP_HOME=/opt/tiger/yarn_deploy/hadoop
+ENV PYTHONPATH=$PYTHONPATH:/opt/tiger/arnold/arnold_entrypoint:/opt/tiger/arnold_toolbox:/opt/tiger/api_common:/opt/tiger/load:/opt/tiger/studio_loader
 
 # 设置sshd自启动
 CMD ["/usr/sbin/sshd", "-D"]

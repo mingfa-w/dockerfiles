@@ -20,7 +20,7 @@ echo ======= $base_image =======
 base_image_param=" --build-arg APPS_PATH=$APPS_PATH --build-arg ARCH=$target_arch --build-arg BASE_IMAGE=$base_image "
 
 # ascend param
-ASCEND_CANN="8.0.RC3.alpha003"
+ASCEND_CANN="8.0.0.alpha003"
 ASCEND_BASE="/usr/local/Ascend"
 ascend_param=" --build-arg ASCEND_CANN=$ASCEND_CANN --build-arg ASCEND_BASE=$ASCEND_BASE "
 
