@@ -19,98 +19,73 @@ ENV HTTP_PROXY=${http_proxy} \
     HTTPS_PROXY=${http_proxy} \
     FTP_PROXY=${http_proxy}
 
-FROM hub.byted.org/base/lab.pytorch:e2e65bf1f8af8e432f378648d4d2bb67
-ARG SCM_TOKEN
-
-Run groupadd --non-unique -g 1000 tiger && useradd -g 1000 -u 1000 -k /root -m tiger || true && rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apt/* && mkdir -p /var/cache/apt/archives && touch /var/cache/apt/archives/lock && mkdir -p /var/cache/apt/archives/partial && apt-get clean -y && apt-get update -y && apt-get -y install wget && apt-get -y install bvc && apt-get -y install libsecret-1-0 || true &&  rm -rf /opt/tiger/chadc  && export DEBIAN_FRONTEND=noninteractive && export https_proxy=http://sys-proxy-rd-relay.byted.org:8118 http_proxy=http://sys-proxy-rd-relay.byted.org:8118 no_proxy="*.byted.org" && mkdir -p ~/.pip && printf "[global]\ntimeout=600\nindex-url=https://bytedpypi.byted.org/simple\n[install]\ntrusted-host=bytedpypi.byted.org" > ~/.pip/pip.conf && mkdir -p ~/.config/pip && printf "[global]\ntimeout=600\nindex-url=https://bytedpypi.byted.org/simple\n[install]\ntrusted-host=bytedpypi.byted.org" > ~/.config/pip/pip.conf && mkdir -p /etc/sudoers.d && printf "tiger ALL=(ALL) NOPASSWD: ALL\nyarn ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/sudoers && rm -rf /opt/tiger/arnold/arnold_entrypoint && mkdir -p /opt/tiger/arnold/arnold_entrypoint && wget -P /opt/tiger/arnold/arnold_entrypoint http://luban-source.byted.org/repository/scm/dlp.dlp_entrypoint_1.0.0.1158.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/arnold/arnold_entrypoint/dlp.dlp_entrypoint_1.0.0.1158.tar.gz -C /opt/tiger/arnold/arnold_entrypoint && rm /opt/tiger/arnold/arnold_entrypoint/dlp.dlp_entrypoint_1.0.0.1158.tar.gz && chown -R tiger:tiger /opt/tiger/arnold/arnold_entrypoint && rm -rf /opt/tiger/arnold_toolbox && mkdir -p /opt/tiger/arnold_toolbox && wget -P /opt/tiger/arnold_toolbox http://luban-source.byted.org/repository/scm/lab.arnold.toolbox_1.0.0.386.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/arnold_toolbox/lab.arnold.toolbox_1.0.0.386.tar.gz -C /opt/tiger/arnold_toolbox && rm /opt/tiger/arnold_toolbox/lab.arnold.toolbox_1.0.0.386.tar.gz && chown -R tiger:tiger /opt/tiger/arnold_toolbox && rm -rf /opt/tiger/api_common && mkdir -p /opt/tiger/api_common && wget -P /opt/tiger/api_common http://luban-source.byted.org/repository/scm/reckon.api.common_1.0.0.161.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/api_common/reckon.api.common_1.0.0.161.tar.gz -C /opt/tiger/api_common && rm /opt/tiger/api_common/reckon.api.common_1.0.0.161.tar.gz && chown -R tiger:tiger /opt/tiger/api_common && rm -rf /opt/tiger/load && mkdir -p /opt/tiger/load && wget -P /opt/tiger/load http://luban-source.byted.org/repository/scm/toutiao.load_1.0.2.436.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/load/toutiao.load_1.0.2.436.tar.gz -C /opt/tiger/load && rm /opt/tiger/load/toutiao.load_1.0.2.436.tar.gz && chown -R tiger:tiger /opt/tiger/load && rm -rf /opt/tiger/spark3 && mkdir -p /opt/tiger/spark3 && wget -P /opt/tiger/spark3 http://luban-source.byted.org/repository/scm/bytedance.spark.spark_release_1.0.0.117.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/spark3/bytedance.spark.spark_release_1.0.0.117.tar.gz -C /opt/tiger/spark3 && rm /opt/tiger/spark3/bytedance.spark.spark_release_1.0.0.117.tar.gz && chown -R tiger:tiger /opt/tiger/spark3
- RUN  apt-get update && apt-get -y install libffi-dev libsqlite3-dev build-essential zlib1g-dev libssl-dev zip unzip locales gcc cmake rinetd libtcmalloc-minimal4 graphviz git sudo zsh libcurl4-openssl-dev libsecret-1-0 && python3 -m pip install --upgrade pip && pip3 install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 || python2 -m pip install --upgrade pip && pip2 install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 || pip install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 && pip2 install --no-cache-dir decorator==4.4.2 ipython==5.8.0 ipykernel findspark pyrsistent==0.16.1 jupyter_kernel_gateway ||  pip3 install --no-cache-dir ipython==7.19.0 ipykernel==5.4.3 findspark jupyter_kernel_gateway && groupadd --non-unique -g 1001 yarn || true && useradd -g 1001 -u 1001 -k /root -m yarn || true && dpkg-reconfigure -f noninteractive tzdata && unset https_proxy http_proxy no_proxy  && echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su &&    chgrp root /etc/passwd && chmod ug+rw /etc/passwd    && rm -r /root/.cache && rm -rf /opt/spark3 && cp -r /opt/tiger/spark3/spark-stable /opt/spark3 && rm -rf /var/cache/apt/* && rm -rf /var/lib/apt/lists/ 
- WORKDIR /opt/spark3/work-dir 
- RUN chmod g+w /opt/spark3/work-dir 
-#  ENTRYPOINT [ "/opt/spark3/kubernetes/dockerfiles/spark/entrypoint.sh" ] 
-#  USER ${spark_uid}
-
-
 RUN apt-get update && \
-    apt-get install -y apt-utils adduser sudo vim tmux openssh-server net-tools iputils-ping \
-    wget tree bash-completion curl sshpass locales && \
-    rm -rf /var/cache/apt/* && rm -rf /var/lib/apt/lists/ && \
+    apt-get install -y apt-utils adduser sudo vim  tmux openssh-server net-tools iputils-ping software-properties-common && \
+    apt-get install -y python3-dbg python3-pip libmpich-dev \
+    git python3-pip python3-distutils python3-wheel python3-yaml python3-setuptools \
+    libssl-dev ninja-build libzstd-dev \
+    wget gdb tree bash-completion curl sshpass locales \
+    ninja-build ccache libssl-dev build-essential \
+        > /dev/null && \
+    apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists && \
     locale-gen en_US.UTF-8 && \
     mkdir -p /var/run/sshd && \
     echo "if [ -f /etc/bash_completion.d/git ]; then\n\
     . /etc/bash_completion.d/git\n\
-    fi\n\
-    " >> /etc/profile
+fi\n\
+" >> /etc/profile
 
 # config language
 ENV LANG=C.UTF-8
+RUN mkdir -p /tmp/py39 && cd /tmp/py39 && \
+    wget https://www.python.org/ftp/python/3.9.19/Python-3.9.19.tar.xz && \
+    tar -xf Python-3.9.19.tar.xz && \
+    cd Python-3.9.19 && \
+    mkdir build && cd build && \
+    ../configure --prefix=/usr/local && \
+    make -j$(nproc) && make -j$(nproc) install && \
+    ln -sf /usr/local/bin/python3.9 /usr/bin/python3 && \
+    ln -sf /usr/local/bin/python3.9 /usr/bin/python
 
+# FROM hub.byted.org/base/lab.pytorch:e2e65bf1f8af8e432f378648d4d2bb67
+ARG SCM_TOKEN
 
-# USER tiger
+Run groupadd --non-unique -g 1000 tiger && useradd -g 1000 -u 1000 -k /root -m tiger || true && rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apt/* && mkdir -p /var/cache/apt/archives && touch /var/cache/apt/archives/lock && mkdir -p /var/cache/apt/archives/partial && apt-get clean -y && apt-get update -y && apt-get -y install wget && apt-get -y install bvc && apt-get -y install libsecret-1-0 || true &&  rm -rf /opt/tiger/chadc  && export DEBIAN_FRONTEND=noninteractive && export https_proxy=http://sys-proxy-rd-relay.byted.org:8118 http_proxy=http://sys-proxy-rd-relay.byted.org:8118 no_proxy="*.byted.org" && mkdir -p ~/.pip && printf "[global]\ntimeout=600\nindex-url=https://bytedpypi.byted.org/simple\n[install]\ntrusted-host=bytedpypi.byted.org" > ~/.pip/pip.conf && mkdir -p ~/.config/pip && printf "[global]\ntimeout=600\nindex-url=https://bytedpypi.byted.org/simple\n[install]\ntrusted-host=bytedpypi.byted.org" > ~/.config/pip/pip.conf && mkdir -p /etc/sudoers.d && printf "tiger ALL=(ALL) NOPASSWD: ALL\nyarn ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/sudoers && rm -rf /opt/tiger/arnold/arnold_entrypoint && mkdir -p /opt/tiger/arnold/arnold_entrypoint && wget -P /opt/tiger/arnold/arnold_entrypoint http://luban-source.byted.org/repository/scm/dlp.dlp_entrypoint_1.0.0.1158.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/arnold/arnold_entrypoint/dlp.dlp_entrypoint_1.0.0.1158.tar.gz -C /opt/tiger/arnold/arnold_entrypoint && rm /opt/tiger/arnold/arnold_entrypoint/dlp.dlp_entrypoint_1.0.0.1158.tar.gz && chown -R tiger:tiger /opt/tiger/arnold/arnold_entrypoint && rm -rf /opt/tiger/arnold_toolbox && mkdir -p /opt/tiger/arnold_toolbox && wget -P /opt/tiger/arnold_toolbox http://luban-source.byted.org/repository/scm/lab.arnold.toolbox_1.0.0.386.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/arnold_toolbox/lab.arnold.toolbox_1.0.0.386.tar.gz -C /opt/tiger/arnold_toolbox && rm /opt/tiger/arnold_toolbox/lab.arnold.toolbox_1.0.0.386.tar.gz && chown -R tiger:tiger /opt/tiger/arnold_toolbox && rm -rf /opt/tiger/api_common && mkdir -p /opt/tiger/api_common && wget -P /opt/tiger/api_common http://luban-source.byted.org/repository/scm/reckon.api.common_1.0.0.161.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/api_common/reckon.api.common_1.0.0.161.tar.gz -C /opt/tiger/api_common && rm /opt/tiger/api_common/reckon.api.common_1.0.0.161.tar.gz && chown -R tiger:tiger /opt/tiger/api_common && rm -rf /opt/tiger/load && mkdir -p /opt/tiger/load && wget -P /opt/tiger/load http://luban-source.byted.org/repository/scm/toutiao.load_1.0.2.436.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/load/toutiao.load_1.0.2.436.tar.gz -C /opt/tiger/load && rm /opt/tiger/load/toutiao.load_1.0.2.436.tar.gz && chown -R tiger:tiger /opt/tiger/load && rm -rf /opt/tiger/spark3 && mkdir -p /opt/tiger/spark3 && wget -P /opt/tiger/spark3 http://luban-source.byted.org/repository/scm/bytedance.spark.spark_release_1.0.0.117.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/spark3/bytedance.spark.spark_release_1.0.0.117.tar.gz -C /opt/tiger/spark3 && rm /opt/tiger/spark3/bytedance.spark.spark_release_1.0.0.117.tar.gz && chown -R tiger:tiger /opt/tiger/spark3
+RUN  apt-get update && apt-get -y install libffi-dev libsqlite3-dev build-essential zlib1g-dev libssl-dev zip unzip locales gcc cmake rinetd libtcmalloc-minimal4 graphviz git sudo zsh libcurl4-openssl-dev libsecret-1-0 && python3 -m pip install --upgrade pip && pip3 install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 || python2 -m pip install --upgrade pip && pip2 install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 || pip install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 && pip2 install --no-cache-dir decorator==4.4.2 ipython==5.8.0 ipykernel findspark pyrsistent==0.16.1 jupyter_kernel_gateway ||  pip3 install --no-cache-dir ipython==7.19.0 ipykernel==5.4.3 findspark jupyter_kernel_gateway && groupadd --non-unique -g 1001 yarn || true && useradd -g 1001 -u 1001 -k /root -m yarn || true && dpkg-reconfigure -f noninteractive tzdata && unset https_proxy http_proxy no_proxy  && echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su &&    chgrp root /etc/passwd && chmod ug+rw /etc/passwd    && rm -r /root/.cache && rm -rf /opt/spark3 && cp -r /opt/tiger/spark3/spark-stable /opt/spark3 && rm -rf /var/cache/apt/* && rm -rf /var/lib/apt/lists/ 
+#  WORKDIR /opt/spark3/work-dir 
+#  RUN chmod g+w /opt/spark3/work-dir 
+
+# # USER tiger
 ENV HADOOP_HDFS_HOME=/opt/tiger/yarn_deploy/hadoop SHELL=/bin/zsh LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/tiger/yarn_deploy/hadoop/lib/native:${JAVA_HOME}/jre/lib/amd64/server:/opt/tiger/ss_lib/so BUILD_BY_MLX_IMAGE_CENTER=1 JAVA_HOME=/opt/tiger/jdk/jdk1.8 HADOOP_CONF_DIR=/opt/tiger/yarn_deploy/hadoop/conf SPARK_HOME=/opt/spark3 PATH=$PATH:/opt/mlx_deploy/miniconda3/envs/mlx/bin:/opt/mlx_deploy/miniconda3/envs/mlx_py2/bin:${JAVA_HOME}/bin:/opt/mlx_deploy/sbin:/opt/mlx_deploy/bin:/usr/sbin:/usr/bin:/usr/local/bin:/opt/tiger/ss_bin:/opt/tiger/ss_lib/bin:/opt/common_tools:/opt/tiger/yarn_deploy/hadoop/bin:/opt/tiger/yarn_deploy/hive/bin SPARK_ON_K8S=true HADOOP_HOME=/opt/tiger/yarn_deploy/hadoop
 ENV PYTHONPATH=$PYTHONPATH:/opt/tiger/arnold/arnold_entrypoint:/opt/tiger/arnold_toolbox:/opt/tiger/api_common:/opt/tiger/load:/opt/tiger/studio_loader
 
+RUN mkdir -p /tmp/torch && cd /tmp/torch && \
+    # . ${PY3_XLLM}/bin/activate && \
+    pip3 uninstall -y torch torch_npu && \
+    wget --no-check-certificate https://download.pytorch.org/whl/cpu/torch-2.3.1%2Bcpu-cp39-cp39-linux_x86_64.whl#sha256=a3cb8e61ba311cee1bb7463cbdcf3ebdfd071e2091e74c5785e3687eb02819f9 && \
+    pip3 install torch-2.3.1+cpu-cp39-cp39-linux_x86_64.whl && \
+    wget --no-check-certificate https://gitee.com/ascend/pytorch/releases/download/v6.0.0-pytorch2.3.1/torch_npu-2.3.1.post4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl && \
+    pip3 install torch_npu-2.3.1.post4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl && \
+    rm /tmp/torch -rf
+
+# ascend tools
+ARG ASCEND_CANN=8.0.0.alpha003
+RUN mkdir /tmp/ascend_tool && cd /tmp/ascend_tool && \
+    wget -O toolkit.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C20SPC703/Ascend-cann-toolkit_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
+    bash toolkit.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force && \
+    wget -O kernels.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C20SPC703/Ascend-cann-kernels-910b_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
+    bash kernels.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force && \
+    rm -rf /tmp/ascend_tool && \
+    chmod -R 777 /usr/local/Ascend/ascend-toolkit
+
+ARG TORCH_PACKAGE=2.3.1
+RUN pip3 install --extra-index-url https://download.pytorch.org/whl/cpu/ torch==${TORCH_PACKAGE}
+ARG TORCH_NPU_PACKAGE=https://gitee.com/ascend/pytorch/releases/download/v6.0.rc3-pytorch2.3.1/torch_npu-2.3.1.post2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+RUN mkdir -p /tmp/torch_npu && cd /tmp/torch_npu && \
+    wget --no-check-certificate ${TORCH_NPU_PACKAGE} && \
+    pip3 install *.whl && \
+    rm /tmp/torch_npu -rf
 
 # 设置sshd自启动
 CMD ["/usr/sbin/sshd", "-D"]
 
-# RUN sed -i 's/ports.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-#     apt-get update && \
-#     yes | unminimize && \
-#     apt-get install -y apt-utils adduser sudo vim  tmux openssh-server net-tools iputils-ping && \
-#     apt-get install -y python3.9  python3-dbg python3-pip libmpich-dev \
-#         git python3-pip python3-distutils python3-wheel python3-yaml python3-setuptools \
-#         libssl-dev ninja-build libzstd-dev python3.9-dev python3.9-venv \
-#         wget gdb tree bash-completion curl sshpass locales \
-#         build-essential apt-utils jq \
-#         > /dev/null && \
-#     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists && \
-#     ln -sf /usr/bin/python3.9 /usr/bin/python3 && \
-#     ln -sf /usr/bin/python3.9 /usr/bin/python && \
-#     locale-gen en_US.UTF-8 && \
-#     mkdir -p /var/run/sshd && \
-#     echo "if [ -f /etc/bash_completion.d/git ]; then\n\
-#     . /etc/bash_completion.d/git\n\
-# fi\n\
-# " >> /etc/profile
-
-# # config language
-# ENV LANG=C.UTF-8
-
-# # ascend tools
-# ARG ASCEND_CANN=8.0.RC3.alpha003
-# RUN mkdir /tmp/ascend_tool && cd /tmp/ascend_tool && \
-#     wget -O toolkit.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C19SPC703/Ascend-cann-toolkit_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
-#     bash toolkit.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force && \
-#     wget -O kernels.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C19SPC703/Ascend-cann-kernels-910b_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
-#     bash kernels.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force && \
-#     rm -rf /tmp/ascend_tool
-
-# # create python venv for py3-triton-x
-# ARG PY3_TRITON_X=${VENV_PATH}/triton-x
-# RUN python -m venv ${PY3_TRITON_X} && \
-#     ${PY3_TRITON_X}/bin/pip install --upgrade pip && \
-#     ${PY3_TRITON_X}/bin/pip3 install wheel setuptools ninja wheel pybind11  attrs==24.2.0 numpy==1.26.4 scipy==1.13.1 decorator==5.1.1 psutil==6.0.0 pytest==8.3.2 pytest-xdist==3.6.1 lit pandas matplotlib pyyaml einops
-
-# ARG TORCH_PACKAGE=2.3.1
-# RUN ${PY3_TRITON_X}/bin/pip3 install --extra-index-url https://download.pytorch.org/whl/cpu/ torch==${TORCH_PACKAGE}
-# ARG TORCH_NPU_PACKAGE=https://gitee.com/ascend/pytorch/releases/download/v6.0.rc3-pytorch2.3.1/torch_npu-2.3.1.post2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-# RUN mkdir -p /tmp/torch_npu && cd /tmp/torch_npu && \
-#     wget --no-check-certificate ${TORCH_NPU_PACKAGE} && \
-#     ${PY3_TRITON_X}/bin/pip3 install *.whl && \
-#     rm /tmp/torch_npu -rf
-
-# RUN ${PY3_TRITON_X}/bin/pip3 install bytedance.triton --index-url https://bytedpypi.byted.org/simple && \
-#     chmod 777 -R ${PY3_TRITON_X}
-
-# RUN echo "source $ASCEND_BASE/ascend-toolkit/set_env.sh\n\
-# export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$ASCEND_BASE/driver/lib64/driver:$ASCEND_BASE/driver/lib64/common\n\
-# export TRITON_NPU_COMPILER_PATH=$ASCEND_BASE/npu_compiler\n\
-# source $APPS_PATH/venv/triton-x/bin/activate\n\
-# " >> ~/.bashrc_ascend && \
-# echo ". ~/.bashrc_ascend" >> ~/.bashrc && \
-# # for codebase ci
-# mv /bin/sh /bin/sh-bak && ln -s /bin/bash /bin/sh 
-
-# # 设置sshd自启动
-# CMD ["/usr/sbin/sshd", "-D"]
-# WORKDIR /host
