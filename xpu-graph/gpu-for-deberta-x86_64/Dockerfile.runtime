@@ -1,0 +1,55 @@
+ARG BASE_IMAGE=ubuntu:20.04
+ARG ssh_prv_key
+ARG ssh_pub_key
+FROM ${BASE_IMAGE}
+ARG ASCEND_BASE=/usr/local/Ascend
+
+RUN echo "root:8uhb9ijn" | chpasswd
+EXPOSE 22
+
+ARG APPS_PATH=/opt/apps
+ARG CODE_PATH=${APPS_PATH}/code
+ARG VENV_PATH=${APPS_PATH}/venv
+ARG http_proxy
+ARG ftp_proxy
+ARG https_proxy
+ARG NPUC_VERSION=0.0.2
+ARG ARCH=aarch64
+ENV HTTP_PROXY=${http_proxy} \
+    HTTPS_PROXY=${http_proxy} \
+    FTP_PROXY=${http_proxy}
+
+
+RUN apt-get update && \
+    apt-get install -y apt-utils adduser sudo vim tmux openssh-server net-tools iputils-ping \
+    wget tree bash-completion curl sshpass locales && \
+    rm -rf /var/cache/apt/* && rm -rf /var/lib/apt/lists/ && \
+    locale-gen en_US.UTF-8 && \
+    mkdir -p /var/run/sshd && \
+    echo "if [ -f /etc/bash_completion.d/git ]; then\n\
+    . /etc/bash_completion.d/git\n\
+    fi\n\
+    " >> /etc/profile
+
+# config language
+ENV LANG=C.UTF-8
+
+# FROM hub.byted.org/base/lab.pytorch:e2e65bf1f8af8e432f378648d4d2bb67
+ARG SCM_TOKEN
+
+RUN groupadd --non-unique -g 1000 tiger && useradd -g 1000 -u 1000 -k /root -m tiger || true && rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apt/* && mkdir -p /var/cache/apt/archives && touch /var/cache/apt/archives/lock && mkdir -p /var/cache/apt/archives/partial && apt-get clean -y && apt-get update -y && apt-get -y install wget && apt-get -y install bvc && apt-get -y install libsecret-1-0 || true &&  rm -rf /opt/tiger/chadc  && export DEBIAN_FRONTEND=noninteractive && export https_proxy=http://sys-proxy-rd-relay.byted.org:8118 http_proxy=http://sys-proxy-rd-relay.byted.org:8118 no_proxy="*.byted.org" && mkdir -p ~/.pip && printf "[global]\ntimeout=600\nindex-url=https://bytedpypi.byted.org/simple\n[install]\ntrusted-host=bytedpypi.byted.org" > ~/.pip/pip.conf && mkdir -p ~/.config/pip && printf "[global]\ntimeout=600\nindex-url=https://bytedpypi.byted.org/simple\n[install]\ntrusted-host=bytedpypi.byted.org" > ~/.config/pip/pip.conf && mkdir -p /etc/sudoers.d && printf "tiger ALL=(ALL) NOPASSWD: ALL\nyarn ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/sudoers && rm -rf /opt/tiger/arnold/arnold_entrypoint && mkdir -p /opt/tiger/arnold/arnold_entrypoint && wget -P /opt/tiger/arnold/arnold_entrypoint http://luban-source.byted.org/repository/scm/dlp.dlp_entrypoint_1.0.0.1158.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/arnold/arnold_entrypoint/dlp.dlp_entrypoint_1.0.0.1158.tar.gz -C /opt/tiger/arnold/arnold_entrypoint && rm /opt/tiger/arnold/arnold_entrypoint/dlp.dlp_entrypoint_1.0.0.1158.tar.gz && chown -R tiger:tiger /opt/tiger/arnold/arnold_entrypoint && rm -rf /opt/tiger/arnold_toolbox && mkdir -p /opt/tiger/arnold_toolbox && wget -P /opt/tiger/arnold_toolbox http://luban-source.byted.org/repository/scm/lab.arnold.toolbox_1.0.0.386.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/arnold_toolbox/lab.arnold.toolbox_1.0.0.386.tar.gz -C /opt/tiger/arnold_toolbox && rm /opt/tiger/arnold_toolbox/lab.arnold.toolbox_1.0.0.386.tar.gz && chown -R tiger:tiger /opt/tiger/arnold_toolbox && rm -rf /opt/tiger/api_common && mkdir -p /opt/tiger/api_common && wget -P /opt/tiger/api_common http://luban-source.byted.org/repository/scm/reckon.api.common_1.0.0.161.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/api_common/reckon.api.common_1.0.0.161.tar.gz -C /opt/tiger/api_common && rm /opt/tiger/api_common/reckon.api.common_1.0.0.161.tar.gz && chown -R tiger:tiger /opt/tiger/api_common && rm -rf /opt/tiger/load && mkdir -p /opt/tiger/load && wget -P /opt/tiger/load http://luban-source.byted.org/repository/scm/toutiao.load_1.0.2.436.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/load/toutiao.load_1.0.2.436.tar.gz -C /opt/tiger/load && rm /opt/tiger/load/toutiao.load_1.0.2.436.tar.gz && chown -R tiger:tiger /opt/tiger/load && rm -rf /opt/tiger/spark3 && mkdir -p /opt/tiger/spark3 && wget -P /opt/tiger/spark3 http://luban-source.byted.org/repository/scm/bytedance.spark.spark_release_1.0.0.117.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/spark3/bytedance.spark.spark_release_1.0.0.117.tar.gz -C /opt/tiger/spark3 && rm /opt/tiger/spark3/bytedance.spark.spark_release_1.0.0.117.tar.gz && chown -R tiger:tiger /opt/tiger/spark3
+RUN  apt-get update && apt-get -y install libffi-dev libsqlite3-dev build-essential zlib1g-dev libssl-dev zip unzip locales gcc cmake rinetd libtcmalloc-minimal4 graphviz git sudo zsh libcurl4-openssl-dev libsecret-1-0 && python3 -m pip install --upgrade pip && pip3 install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 || python2 -m pip install --upgrade pip && pip2 install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 || pip install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 && pip2 install --no-cache-dir decorator==4.4.2 ipython==5.8.0 ipykernel findspark pyrsistent==0.16.1 jupyter_kernel_gateway ||  pip3 install --no-cache-dir ipython==7.19.0 ipykernel==5.4.3 findspark jupyter_kernel_gateway && groupadd --non-unique -g 1001 yarn || true && useradd -g 1001 -u 1001 -k /root -m yarn || true && dpkg-reconfigure -f noninteractive tzdata && unset https_proxy http_proxy no_proxy  && echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su &&    chgrp root /etc/passwd && chmod ug+rw /etc/passwd    && rm -r /root/.cache && rm -rf /opt/spark3 && cp -r /opt/tiger/spark3/spark-stable /opt/spark3 && rm -rf /var/cache/apt/* && rm -rf /var/lib/apt/lists/ 
+# WORKDIR /opt/spark3/work-dir 
+# RUN chmod g+w /opt/spark3/work-dir 
+#  ENTRYPOINT [ "/opt/spark3/kubernetes/dockerfiles/spark/entrypoint.sh" ] 
+#  USER ${spark_uid}
+
+
+ENV HADOOP_HDFS_HOME=/opt/tiger/yarn_deploy/hadoop SHELL=/bin/zsh LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/tiger/yarn_deploy/hadoop/lib/native:${JAVA_HOME}/jre/lib/amd64/server:/opt/tiger/ss_lib/so BUILD_BY_MLX_IMAGE_CENTER=1 JAVA_HOME=/opt/tiger/jdk/jdk1.8 HADOOP_CONF_DIR=/opt/tiger/yarn_deploy/hadoop/conf SPARK_HOME=/opt/spark3 PATH=$PATH:/opt/mlx_deploy/miniconda3/envs/mlx/bin:/opt/mlx_deploy/miniconda3/envs/mlx_py2/bin:${JAVA_HOME}/bin:/opt/mlx_deploy/sbin:/opt/mlx_deploy/bin:/usr/sbin:/usr/bin:/usr/local/bin:/opt/tiger/ss_bin:/opt/tiger/ss_lib/bin:/opt/common_tools:/opt/tiger/yarn_deploy/hadoop/bin:/opt/tiger/yarn_deploy/hive/bin SPARK_ON_K8S=true HADOOP_HOME=/opt/tiger/yarn_deploy/hadoop
+ENV PYTHONPATH=$PYTHONPATH:/opt/tiger/arnold/arnold_entrypoint:/opt/tiger/arnold_toolbox:/opt/tiger/api_common:/opt/tiger/load:/opt/tiger/studio_loader
+
+
+# # 设置sshd自启动
+CMD ["/usr/sbin/sshd", "-D"]
+WORKDIR /host
+
