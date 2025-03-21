@@ -21,11 +21,13 @@ ENV HTTP_PROXY=${http_proxy} \
 
 RUN apt-get update && \
     apt-get install -y apt-utils adduser sudo vim  tmux openssh-server net-tools iputils-ping software-properties-common && \
-    apt-get install -y python3-dbg python3-pip libmpich-dev \
-    git python3-pip python3-distutils python3-wheel python3-yaml python3-setuptools \
+    apt-get install -y python3-dbg libmpich-dev \
+    git python3-distutils python3-wheel python3-yaml python3-setuptools \
     libssl-dev ninja-build libzstd-dev \
     wget gdb tree bash-completion curl sshpass locales \
     ninja-build ccache libssl-dev build-essential \
+    libbz2-dev libssl-dev libffi-dev \
+    build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libmpc-dev libmpfr-dev libgmp-dev libisl-dev autoconf automake libncurses5-dev libelf-dev \
         > /dev/null && \
     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists && \
     locale-gen en_US.UTF-8 && \
@@ -35,14 +37,29 @@ RUN apt-get update && \
 fi\n\
 " >> /etc/profile
 
+# install gcc
+RUN mkdir -p /tmp/gcc/ && cd /tmp/gcc/ && \
+    wget https://ftp.gnu.org/gnu/gcc/gcc-9.5.0/gcc-9.5.0.tar.gz && \
+    tar xvf gcc-9.5.0.tar.gz && \
+    cd gcc-9.5.0 && \
+    mkdir build && cd build && \
+    ../configure --prefix=/usr/local/gcc-9.5.0 --enable-languages=c,c++ --disable-multilib && \
+    make -j$(nproc) && \
+    make install && \
+    rm -rf /tmp/gcc/ && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/local/gcc-9.5.0/bin/gcc 60 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/local/gcc-9.5.0/bin/g++ 60 && \
+    update-alternatives --config gcc && \
+    update-alternatives --config g++
+
 # config language
 ENV LANG=C.UTF-8
 RUN mkdir -p /tmp/py39 && cd /tmp/py39 && \
-    wget https://www.python.org/ftp/python/3.9.19/Python-3.9.19.tar.xz && \
-    tar -xf Python-3.9.19.tar.xz && \
+    wget https://www.python.org/ftp/python/3.9.19/Python-3.9.19.tgz && \
+    tar -xzf Python-3.9.19.tgz && \
     cd Python-3.9.19 && \
     mkdir build && cd build && \
-    ../configure --prefix=/usr/local && \
+    ../configure --prefix=/usr/local --enable-optimizations --with-ensurepip=install && \
     make -j$(nproc) && make -j$(nproc) install && \
     ln -sf /usr/local/bin/python3.9 /usr/bin/python3 && \
     ln -sf /usr/local/bin/python3.9 /usr/bin/python
@@ -51,7 +68,7 @@ RUN mkdir -p /tmp/py39 && cd /tmp/py39 && \
 ARG SCM_TOKEN
 
 Run groupadd --non-unique -g 1000 tiger && useradd -g 1000 -u 1000 -k /root -m tiger || true && rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apt/* && mkdir -p /var/cache/apt/archives && touch /var/cache/apt/archives/lock && mkdir -p /var/cache/apt/archives/partial && apt-get clean -y && apt-get update -y && apt-get -y install wget && apt-get -y install bvc && apt-get -y install libsecret-1-0 || true &&  rm -rf /opt/tiger/chadc  && export DEBIAN_FRONTEND=noninteractive && export https_proxy=http://sys-proxy-rd-relay.byted.org:8118 http_proxy=http://sys-proxy-rd-relay.byted.org:8118 no_proxy="*.byted.org" && mkdir -p ~/.pip && printf "[global]\ntimeout=600\nindex-url=https://bytedpypi.byted.org/simple\n[install]\ntrusted-host=bytedpypi.byted.org" > ~/.pip/pip.conf && mkdir -p ~/.config/pip && printf "[global]\ntimeout=600\nindex-url=https://bytedpypi.byted.org/simple\n[install]\ntrusted-host=bytedpypi.byted.org" > ~/.config/pip/pip.conf && mkdir -p /etc/sudoers.d && printf "tiger ALL=(ALL) NOPASSWD: ALL\nyarn ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/sudoers && rm -rf /opt/tiger/arnold/arnold_entrypoint && mkdir -p /opt/tiger/arnold/arnold_entrypoint && wget -P /opt/tiger/arnold/arnold_entrypoint http://luban-source.byted.org/repository/scm/dlp.dlp_entrypoint_1.0.0.1158.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/arnold/arnold_entrypoint/dlp.dlp_entrypoint_1.0.0.1158.tar.gz -C /opt/tiger/arnold/arnold_entrypoint && rm /opt/tiger/arnold/arnold_entrypoint/dlp.dlp_entrypoint_1.0.0.1158.tar.gz && chown -R tiger:tiger /opt/tiger/arnold/arnold_entrypoint && rm -rf /opt/tiger/arnold_toolbox && mkdir -p /opt/tiger/arnold_toolbox && wget -P /opt/tiger/arnold_toolbox http://luban-source.byted.org/repository/scm/lab.arnold.toolbox_1.0.0.386.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/arnold_toolbox/lab.arnold.toolbox_1.0.0.386.tar.gz -C /opt/tiger/arnold_toolbox && rm /opt/tiger/arnold_toolbox/lab.arnold.toolbox_1.0.0.386.tar.gz && chown -R tiger:tiger /opt/tiger/arnold_toolbox && rm -rf /opt/tiger/api_common && mkdir -p /opt/tiger/api_common && wget -P /opt/tiger/api_common http://luban-source.byted.org/repository/scm/reckon.api.common_1.0.0.161.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/api_common/reckon.api.common_1.0.0.161.tar.gz -C /opt/tiger/api_common && rm /opt/tiger/api_common/reckon.api.common_1.0.0.161.tar.gz && chown -R tiger:tiger /opt/tiger/api_common && rm -rf /opt/tiger/load && mkdir -p /opt/tiger/load && wget -P /opt/tiger/load http://luban-source.byted.org/repository/scm/toutiao.load_1.0.2.436.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/load/toutiao.load_1.0.2.436.tar.gz -C /opt/tiger/load && rm /opt/tiger/load/toutiao.load_1.0.2.436.tar.gz && chown -R tiger:tiger /opt/tiger/load && rm -rf /opt/tiger/spark3 && mkdir -p /opt/tiger/spark3 && wget -P /opt/tiger/spark3 http://luban-source.byted.org/repository/scm/bytedance.spark.spark_release_1.0.0.117.tar.gz --header="x-auth-token:${SCM_TOKEN}" && tar -xf /opt/tiger/spark3/bytedance.spark.spark_release_1.0.0.117.tar.gz -C /opt/tiger/spark3 && rm /opt/tiger/spark3/bytedance.spark.spark_release_1.0.0.117.tar.gz && chown -R tiger:tiger /opt/tiger/spark3
-RUN  apt-get update && apt-get -y install libffi-dev libsqlite3-dev build-essential zlib1g-dev libssl-dev zip unzip locales gcc cmake rinetd libtcmalloc-minimal4 graphviz git sudo zsh libcurl4-openssl-dev libsecret-1-0 && python3 -m pip install --upgrade pip && pip3 install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 || python2 -m pip install --upgrade pip && pip2 install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 || pip install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 && pip2 install --no-cache-dir decorator==4.4.2 ipython==5.8.0 ipykernel findspark pyrsistent==0.16.1 jupyter_kernel_gateway ||  pip3 install --no-cache-dir ipython==7.19.0 ipykernel==5.4.3 findspark jupyter_kernel_gateway && groupadd --non-unique -g 1001 yarn || true && useradd -g 1001 -u 1001 -k /root -m yarn || true && dpkg-reconfigure -f noninteractive tzdata && unset https_proxy http_proxy no_proxy  && echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su &&    chgrp root /etc/passwd && chmod ug+rw /etc/passwd    && rm -r /root/.cache && rm -rf /opt/spark3 && cp -r /opt/tiger/spark3/spark-stable /opt/spark3 && rm -rf /var/cache/apt/* && rm -rf /var/lib/apt/lists/ 
+RUN  apt-get update && apt-get -y install libffi-dev libsqlite3-dev build-essential zlib1g-dev libssl-dev zip unzip locales gcc cmake rinetd libtcmalloc-minimal4 graphviz git sudo zsh libcurl4-openssl-dev libsecret-1-0 && python3 -m pip install --upgrade pip && pip3 install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 || python2 -m pip install --upgrade pip && pip2 install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 || pip install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 && pip2 install --no-cache-dir decorator==4.4.2 ipython==5.8.0 ipykernel findspark pyrsistent==0.16.1 jupyter_kernel_gateway ||  pip3 install --no-cache-dir ipython==7.19.0 ipykernel==5.4.3 findspark jupyter_kernel_gateway && groupadd --non-unique -g 1001 yarn || true && useradd -g 1001 -u 1001 -k /root -m yarn || true && dpkg-reconfigure -f noninteractive tzdata && unset https_proxy http_proxy no_proxy  && echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su &&    chgrp root /etc/passwd && chmod ug+rw /etc/passwd    && rm -rf /root/.cache && rm -rf /opt/spark3 && cp -r /opt/tiger/spark3/spark-stable /opt/spark3 && rm -rf /var/cache/apt/* && rm -rf /var/lib/apt/lists/ 
 #  WORKDIR /opt/spark3/work-dir 
 #  RUN chmod g+w /opt/spark3/work-dir 
 
@@ -102,6 +119,90 @@ export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$ASCEND_BASE/driver/lib64/driver:$ASCEN
 " >> ~/.bashrc_ascend && \
 echo ". ~/.bashrc_ascend" >> ~/.bashrc
 
+
+RUN rm -rf /tmp/py39 && \
+    mkdir -p /tmp/py39 && cd /tmp/py39 && \
+    wget https://www.python.org/ftp/python/3.9.19/Python-3.9.19.tgz && \
+    tar -xzf Python-3.9.19.tgz && \
+    cd Python-3.9.19 && \
+    mkdir build && cd build && \
+    ../configure --prefix=/usr/local --enable-optimizations --with-ensurepip=install && \
+    make -j$(nproc) && make -j$(nproc) install && \
+    ln -sf /usr/local/bin/python3.9 /usr/bin/python3 && \
+    ln -sf /usr/local/bin/python3.9 /usr/bin/python
+
+RUN export http_proxy="http://bj-rd-proxy.byted.org:3128" && \
+    export https_proxy="http://bj-rd-proxy.byted.org:3128" && \
+    export no_proxy="apt.byted.org,mirrors.byted.org,bytedpypi.byted.org,d.scm.byted.org,luban-source.byted.org" && \
+    ## ptx2 yes
+    pip3 install https://d.scm.byted.org/api/v2/download/search.infra.ptx_th23x_cu124_1.0.0.1.tar.gz && \
+    ## 安装matxscript
+    pip3 install https://d.scm.byted.org/api/v2/download/search.infra.matxscript189_th23x_cuda124_cpp17_1.0.0.1.tar.gz && \
+    pip3 install http://d.scm.byted.org/api/v2/download/ceph:nlp.tokenizer.py_1.0.0.115.tar.gz && \
+    pip3 install http://d.scm.byted.org/api/v2/download/ceph:search.nlp.text_counter_2.4.4.2.tar.gz && \
+    pip3 install https://luban-source.byted.org/repository/scm/search.nlp.libcut_py_matx4_2.3.1.1.tar.gz && \
+    pip3 install byted_tensorproto && \
+    ## 安装dataset库（内部包，非pypi），方便读取hdfs, ptx依赖这个仓库
+    pip3 install http://d.scm.byted.org/api/v2/download/ceph:nlp.lib.dataset_1.0.0.361.tar.gz -i https://bytedpypi.byted.org/simple/ -I && \
+    ## pip3 install -r requirements.txt
+    pip3 install psutil==5.9.5 && \
+    pip3 install gevent==24.11.1 && \
+    pip3 install thrift==0.11.0 && \
+    pip3 install tqdm && \
+    pip3 install jsonnet>=0.10.0 && \
+    pip3 install byted-wandb==0.13.75 && \
+    pip3 install byted-janus==0.1.6.post6 && \
+    pip3 install platformdirs==4.3.6 && \
+    pip3 install regex>=2.5.89 && \
+    pip3 install numpy==1.26.4 && \
+    pip3 install pyarrow==12.0.1 && \
+    pip3 install apex==0.9.10.dev0 && \
+    pip3 install tensorboard==2.18.0 && \
+    pip3 install tensorflow-io==0.37.1 && \
+    pip3 install tensorboardx && \
+    pip3 install triton==3.0.0 && \
+    # janus
+    # pip3 install byted-janus==0.1.6.post6 -i https://bytedpypi.byted.org/simple
+    # 不使用官方版本，改为使用liyahe.24 fix的版本, 主要改动是deberta moe部分不对专家概率进行归一化, 
+    # 对应commit:https://code.byted.org/data/janus_public/commit/a9909ac513e5a4b9b0bb0834314e40c34e7578ca
+    pip3 install -I https://luban-source.byted.org/repository/scm/aml.mlsys.janus_dev_public_1.0.0.16.tar.gz  && \
+    # janus 安装会和tensorflow有冲突
+    # tensorflow-io 不依赖 tensorflow
+    # pip3 install tensorflow==2.18.0
+    ## 安装xperf
+    export LEGP_OPS_VERSION=1.0.0.37 && \
+    pip3 install http://luban-source.byted.org/repository/scm/data.aml.lego_ops_search_torch23x_cu124_${LEGP_OPS_VERSION}.tar.gz && \
+    # lego pipeline
+    pip3 install https://d.scm.byted.org/api/v2/download/data.aml.lego_1.0.0.152.tar.gz --force-reinstall && \
+    # 改图工具THSEditor
+    # pip3 install http://tosv.byted.org/obj/bytevision-test-data/thseditor/thseditor-0.1.8-cp37-cp37m-linux_x86_64.whl
+    # laplace client
+    # pip install -U bytedlaplace -i https://bytedpypi.byted.org/simple
+    # 切词工具
+    pip3 install http://d.scm.byted.org/api/v2/download/search.nlp.libcut_data_zh_20200827_1.0.0.2.tar.gz -i https://bytedpypi.byted.org/simple/ -q  && \
+    pip3 install https://luban-source.byted.org/repository/scm/search.nlp.libcut_data_zh_20200827fix2_1.0.0.2.tar.gz --upgrade  && \
+    # pip2
+    ## jinja2 needed by hadoop
+    pip3 install jinja2  && \
+    ## bvc
+    sudo apt update  && \
+    sudo apt install -y bvc  && \
+    ## clang1606
+    #bvc clone ss_bin /opt/tiger/ss_bin -f
+    bvc clone inf/blade/blade_build /opt/tiger/typhoon-blade  && \
+    bvc clone sys/ste/x86_64_x86_64_clang_1606 /opt/tiger/cpp_tools/x86_64_x86_64_clang_1606  && \
+    # arnold platform doesn't need doas tool
+    #bvc clone tao/modules/doas /tmp/doas-install/ && chmod +x /tmp/doas-install/doas-install.sh && sudo bash /tmp/doas-install/doas-install.sh
+    ## ENV
+    export LD_LIBRARY_PATH="/opt/tiger/cpp_tools/x86_64_x86_64_clang_1606/lib64:/opt/tiger/cpp_tools/x86_64_x86_64_clang_1606/lib:$LD_LIBRARY_PATH"  && \
+    wget https://developer.nvidia.com/downloads/assets/tools/secure/nsight-systems/2024_7/NsightSystems-linux-cli-public-2024.7.1.84-3512561.deb  && \
+    sudo dpkg -i NsightSystems-linux-cli-public-2024.7.1.84-3512561.deb  && \
+    pip3 install ipdb  && \
+    pip3 install fsspec==0.6.2  && \
+    pip3 install scikit-learn  && \
+    pip3 install numpy==1.21.5  && \
+    pip3 install zstandard  && \
+    pip3 install apex  && \
 
 # 设置sshd自启动
 CMD ["/usr/sbin/sshd", "-D"]
