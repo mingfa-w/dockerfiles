@@ -1,0 +1,89 @@
+ARG BASE_IMAGE=ubuntu:20.04
+ARG ssh_prv_key
+ARG ssh_pub_key
+FROM ${BASE_IMAGE}
+ARG ASCEND_BASE=/usr/local/Ascend
+
+RUN echo "root:8uhb9ijn" | chpasswd
+EXPOSE 22
+
+ARG APPS_PATH=/opt/apps
+ARG CODE_PATH=${APPS_PATH}/code
+ARG VENV_PATH=${APPS_PATH}/venv
+ARG http_proxy
+ARG ftp_proxy
+ARG https_proxy
+ARG NPUC_VERSION=0.0.2
+ARG ARCH=aarch64
+ENV HTTP_PROXY=${http_proxy} \
+    HTTPS_PROXY=${http_proxy} \
+    FTP_PROXY=${http_proxy}
+
+RUN sed -i 's/ports.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    apt-get update && \
+    yes | unminimize && \
+    apt-get install -y clang lld lldb clangd-12 ninja-build ccache libssl-dev clang-format build-essential apt-utils jq \
+        > /dev/null && \
+    apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists && \
+    update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-12 100
+
+# config language
+ENV LANG=C.UTF-8
+
+# install cmake
+RUN mkdir /tmp/cmake && cd /tmp/cmake && \
+	wget https://cmake.org/files/v3.22/cmake-3.22.1.tar.gz && \
+	tar -zxvf cmake-3.22.1.tar.gz && \
+	cd cmake-3.22.1 && \
+    ./configure && make -j$(nproc) && make install && \
+    rm -rf /tmp/cmake
+
+# install llvm for triton-x
+ARG LLVM_CODE_NAME=llvm_20.0.0
+ARG LLVM_INSTALL_PATH_RELEASE=${APPS_PATH}/${LLVM_CODE_NAME}_release
+ARG LLVM_INSTALL_PATH_DEBUG=${APPS_PATH}/${LLVM_CODE_NAME}_debug
+RUN git clone -b mingfa-w/b5cc222 https://github.com/mingfa-w/llvm-project.git ${CODE_PATH}/${LLVM_CODE_NAME} && \
+    bash ${CODE_PATH}/${LLVM_CODE_NAME}/mingfa-w/build.sh -t Release -p ${LLVM_INSTALL_PATH_RELEASE} -r
+
+# == 配置ssh private key ==
+# Copy over private key, and set permissions
+ADD id_rsa /root/.ssh/id_rsa
+ADD id_rsa.pub /root/.ssh/id_rsa.pub
+RUN chmod 700 /root/.ssh/id_rsa && \
+    chmod 700 /root/.ssh/id_rsa.pub && \
+    chown -R root:root /root/.ssh && \
+    echo "Host code.byted.org\n\tStrictHostKeyChecking no\n" >> /root/.ssh/config && \
+    git config --global url.ssh://git@code.byted.org/.insteadOf https://code.byted.org/ && \
+    touch /root/.ssh/known_hosts && \
+    # 设置SSH无密码登录（如果需要）
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    mkdir -p /var/run/sshd
+
+# download triton deps nvidia package
+ARG GITHUB_TOKEN=
+ARG REPO=BD-Seed-HHW/triton-x
+ARG FILE=triton-x-deps-nvidia.tar.gz
+ARG VERSION=v0.1.0-alpha
+RUN mkdir -p /root/.triton && cd /root/.triton && \
+    curl -L \
+  -H "Accept: application/octet-stream" \
+  -H "Authorization: Bearer ${GITHUB_TOKEN}"\
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  -o ${FILE} \
+  https://api.github.com/repos/${REPO}/releases/assets/`curl -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.v3.raw"  -s https://api.github.com/repos/${REPO}/releases | jq ". | map(select(.tag_name == \"${VERSION}\"))[0].assets | map(select(.name == \"${FILE}\"))[0].id"` && \
+  tar zxvf ${FILE} && \
+  cp -r triton-x-deps-nvidia/* . && \
+  rm ${FILE} -rf && rm triton-x-deps-nvidia -rf
+
+# # build triton-x
+# RUN . ${PY3_TRITON_X}/bin/activate && \
+#    mkdir -p ${CODE_PATH} && cd ${CODE_PATH} && \
+#    git clone --recurse-submodules --branch develop git@code.byted.org:seed/triton-x.git && \
+#    cd triton-x && \
+#    bash tools/script/build-triton-x.sh -t release -r && \
+#    rm ../triton-x -rf
+
+# 设置sshd自启动
+CMD ["/usr/sbin/sshd", "-D"]
+WORKDIR /host
+# ENTRYPOINT ["/bin/bash"]

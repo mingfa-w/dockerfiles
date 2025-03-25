@@ -1,0 +1,82 @@
+ARG BASE_IMAGE=ubuntu:20.04
+ARG ssh_prv_key
+ARG ssh_pub_key
+FROM ${BASE_IMAGE}
+ARG ASCEND_BASE=/usr/local/Ascend
+
+RUN echo "root:8uhb9ijn" | chpasswd
+EXPOSE 22
+
+ARG APPS_PATH=/opt/apps
+ARG CODE_PATH=${APPS_PATH}/code
+ARG VENV_PATH=${APPS_PATH}/venv
+ARG http_proxy
+ARG ftp_proxy
+ARG https_proxy
+ARG NPUC_VERSION=0.0.2
+ARG ARCH=aarch64
+ENV HTTP_PROXY=${http_proxy} \
+    HTTPS_PROXY=${http_proxy} \
+    FTP_PROXY=${http_proxy}
+
+RUN sed -i 's/ports.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    apt-get update && \
+    yes | unminimize && \
+    apt-get install -y apt-utils adduser sudo vim  tmux openssh-server net-tools iputils-ping && \
+    apt-get install -y python3.9  python3-dbg python3-pip libmpich-dev \
+        git python3-pip python3-distutils python3-wheel python3-yaml python3-setuptools \
+        libssl-dev ninja-build libzstd-dev python3.9-dev python3.9-venv \
+        wget gdb tree bash-completion curl sshpass locales \
+        build-essential apt-utils jq \
+        > /dev/null && \
+    apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists && \
+    ln -sf /usr/bin/python3.9 /usr/bin/python3 && \
+    ln -sf /usr/bin/python3.9 /usr/bin/python && \
+    locale-gen en_US.UTF-8 && \
+    mkdir -p /var/run/sshd && \
+    echo "if [ -f /etc/bash_completion.d/git ]; then\n\
+    . /etc/bash_completion.d/git\n\
+fi\n\
+" >> /etc/profile
+
+# config language
+ENV LANG=C.UTF-8
+
+# ascend tools
+ARG ASCEND_CANN=8.0.RC3.alpha003
+RUN mkdir /tmp/ascend_tool && cd /tmp/ascend_tool && \
+    wget -O toolkit.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C19SPC703/Ascend-cann-toolkit_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
+    bash toolkit.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force && \
+    wget -O kernels.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C19SPC703/Ascend-cann-kernels-910b_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
+    bash kernels.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force && \
+    rm -rf /tmp/ascend_tool
+
+# create python venv for py3-triton-x
+ARG PY3_TRITON_X=${VENV_PATH}/triton-x
+RUN python -m venv ${PY3_TRITON_X} && \
+    ${PY3_TRITON_X}/bin/pip install --upgrade pip && \
+    ${PY3_TRITON_X}/bin/pip3 install wheel setuptools ninja wheel pybind11  attrs==24.2.0 numpy==1.26.4 scipy==1.13.1 decorator==5.1.1 psutil==6.0.0 pytest==8.3.2 pytest-xdist==3.6.1 lit pandas matplotlib pyyaml einops
+
+ARG TORCH_PACKAGE=2.3.1
+RUN ${PY3_TRITON_X}/bin/pip3 install --extra-index-url https://download.pytorch.org/whl/cpu/ torch==${TORCH_PACKAGE}
+ARG TORCH_NPU_PACKAGE=https://gitee.com/ascend/pytorch/releases/download/v6.0.rc3-pytorch2.3.1/torch_npu-2.3.1.post2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+RUN mkdir -p /tmp/torch_npu && cd /tmp/torch_npu && \
+    wget --no-check-certificate ${TORCH_NPU_PACKAGE} && \
+    ${PY3_TRITON_X}/bin/pip3 install *.whl && \
+    rm /tmp/torch_npu -rf
+
+RUN ${PY3_TRITON_X}/bin/pip3 install bytedance.triton --index-url https://bytedpypi.byted.org/simple && \
+    chmod 777 -R ${PY3_TRITON_X}
+
+RUN echo "source $ASCEND_BASE/ascend-toolkit/set_env.sh\n\
+export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$ASCEND_BASE/driver/lib64/driver:$ASCEND_BASE/driver/lib64/common\n\
+export TRITON_NPU_COMPILER_PATH=$ASCEND_BASE/npu_compiler\n\
+source $APPS_PATH/venv/triton-x/bin/activate\n\
+" >> ~/.bashrc_ascend && \
+echo ". ~/.bashrc_ascend" >> ~/.bashrc && \
+# for codebase ci
+mv /bin/sh /bin/sh-bak && ln -s /bin/bash /bin/sh 
+
+# 设置sshd自启动
+CMD ["/usr/sbin/sshd", "-D"]
+WORKDIR /host
