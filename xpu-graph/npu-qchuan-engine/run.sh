@@ -5,9 +5,9 @@ cd ${script_dir}
 
 CONTAINER_NAME=$USER
 STOP=0
-PORT=8006
+PORT=8106
 CORE_NUM=0
-TYPE=devel
+TYPE=runtime
 # 处理参数
 while getopts "su:p:n:t:" opt
 do
@@ -50,7 +50,7 @@ docker_in_docker=" -p $PORT:22 \
                 -v $(which docker):/bin/docker "
 # echo $docker_in_docker ====; exit 0
 # docker_run_flag=" --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all --cap-add=SYS_PTRACE --security-opt seccomp=unconfined "
-docker_run_flag=" --shm-size=20gb --cap-add=SYS_PTRACE \
+docker_run_flag=" --shm-size=20gb --cap-add=SYS_PTRACE     --privileged \
                 -v /usr/local/dcmi:/usr/local/dcmi \
                 -v /usr/local/bin/npu-smi:/usr/local/bin/npu-smi \
                 -v /usr/local/Ascend/driver/lib64:/usr/local/Ascend/driver/lib64 \
@@ -84,7 +84,7 @@ if [[ $STOP == 1 ]]; then
 fi
 
 if [ -z "$OLD_ID" ]; then
-    CMD="docker run $docker_in_docker $docker_run_flag -t -d --name $CONTAINER_NAME $MOUNT_DIR_ASCEND -v $MOUNT_DIR:/host --tmpfs /tmp:exec --rm $image "
+    CMD="docker run $docker_in_docker $docker_run_flag -t -d --name $CONTAINER_NAME $MOUNT_DIR_ASCEND -v $MOUNT_DIR:/host --tmpfs /tmp:exec $image "
     echo CMD = $CMD
     ID=`$CMD`
     docker exec --user root $ID groupadd -f -g $GROUPID $GROUP

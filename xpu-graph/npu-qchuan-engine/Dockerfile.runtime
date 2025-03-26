@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=ubuntu:20.04
+ARG BASE_IMAGE=debian:10
 ARG ssh_prv_key
 ARG ssh_pub_key
 FROM ${BASE_IMAGE}
@@ -19,63 +19,119 @@ ENV HTTP_PROXY=${http_proxy} \
     HTTPS_PROXY=${http_proxy} \
     FTP_PROXY=${http_proxy}
 
-RUN sed -i 's/ports.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-    apt-get update && \
-    yes | unminimize && \
-    apt-get install -y apt-utils adduser sudo vim  tmux openssh-server net-tools iputils-ping && \
-    apt-get install -y python3.9  python3-dbg python3-pip libmpich-dev \
-        git python3-pip python3-distutils python3-wheel python3-yaml python3-setuptools \
-        libssl-dev ninja-build libzstd-dev python3.9-dev python3.9-venv \
-        wget gdb tree bash-completion curl sshpass locales \
-        build-essential apt-utils jq \
+RUN apt-get update && \
+    apt-get install -y apt-utils adduser sudo vim  tmux openssh-server net-tools iputils-ping software-properties-common && \
+    apt-get install -y python3-dbg libmpich-dev \
+    git python3-distutils python3-wheel python3-yaml python3-setuptools \
+    libssl-dev ninja-build libzstd-dev \
+    wget tree bash-completion curl sshpass locales \
+    ninja-build ccache libssl-dev build-essential \
+    libbz2-dev libssl-dev libffi-dev \
+    # for build gcc
+    bison flex texinfo gperf libtool patchutils bc zlib1g-dev libmpc-dev libmpfr-dev libgmp-dev libisl-dev autoconf automake libncurses5-dev libelf-dev \
+    # for glibc
+    gawk \
+    # for spack3
+    libffi-dev libsqlite3-dev build-essential zlib1g-dev libssl-dev zip unzip \
+    locales gcc cmake rinetd libtcmalloc-minimal4 graphviz git sudo zsh \
+    libcurl4-openssl-dev libsecret-1-0 \
         > /dev/null && \
     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists && \
-    ln -sf /usr/bin/python3.9 /usr/bin/python3 && \
-    ln -sf /usr/bin/python3.9 /usr/bin/python && \
     locale-gen en_US.UTF-8 && \
     mkdir -p /var/run/sshd && \
     echo "if [ -f /etc/bash_completion.d/git ]; then\n\
     . /etc/bash_completion.d/git\n\
 fi\n\
 " >> /etc/profile
-
 # config language
 ENV LANG=C.UTF-8
 
+# install cmake
+RUN mkdir /tmp/cmake && cd /tmp/cmake && \
+	wget https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1.tar.gz && \
+	tar -zxvf cmake-3.22.1.tar.gz && \
+	cd cmake-3.22.1 && \
+    ./configure && make -j$(nproc) && make install && \
+    rm -rf /tmp/cmake
+
+# install gcc
+RUN mkdir -p /tmp/gcc/ && cd /tmp/gcc/ && \
+    wget https://ftp.gnu.org/gnu/gcc/gcc-9.5.0/gcc-9.5.0.tar.gz && \
+    tar xvf gcc-9.5.0.tar.gz && \
+    cd gcc-9.5.0 && \
+    mkdir build && cd build && \
+    ../configure --prefix=/usr/local/gcc-9.5.0 --enable-languages=c,c++ --disable-multilib && \
+    make -j$(nproc) && \
+    make install && \
+    rm -rf /tmp/gcc/ && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/local/gcc-9.5.0/bin/gcc 60 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/local/gcc-9.5.0/bin/g++ 60 && \
+    update-alternatives --config gcc && \
+    update-alternatives --config g++
+
+# install glibc
+RUN apt update && apt install -y bison && \
+    mkdir /tmp/glibc && cd /tmp/glibc && \
+    wget https://ftp.gnu.org/gnu/glibc/glibc-2.31.tar.xz && \
+    tar -xf glibc-2.31.tar.xz && \
+    cd glibc-2.31 && mkdir build && cd build && \
+    unset LD_LIBRARY_PATH && \
+    ../configure --prefix=/usr/local --disable-sanity-checks && \
+    make -j$(nproc) && make install && \
+    cp /usr/local/lib/libm-2.31.so /lib/x86_64-linux-gnu/ && \
+    ln -sf /lib/x86_64-linux-gnu/libm-2.31.so /lib/x86_64-linux-gnu/libm.so.6 && \
+    rm -rf /tmp/glibc
+# RUN ln -sf /usr/local/gcc-9.5.0/lib64/libstdc++.so.6.0.28 /lib/x86_64-linux-gnu/libstdc++.so.6
+
+# install python3.9.19
+RUN rm -rf /tmp/py39 && \
+    mkdir -p /tmp/py39 && cd /tmp/py39 && \
+    wget https://www.python.org/ftp/python/3.9.19/Python-3.9.19.tgz && \
+    tar -xzf Python-3.9.19.tgz && \
+    cd Python-3.9.19 && \
+    mkdir build && cd build && \
+    ../configure --prefix=/usr/local --enable-optimizations --with-ensurepip=install && \
+    make -j$(nproc) && make -j$(nproc) install && \
+    ln -sf /usr/local/bin/python3.9 /usr/bin/python3 && \
+    ln -sf /usr/local/bin/python3.9 /usr/bin/python
+
 # ascend tools
-ARG ASCEND_CANN=8.0.RC3.alpha003
+ARG ASCEND_CANN=8.0.0.alpha003
 RUN mkdir /tmp/ascend_tool && cd /tmp/ascend_tool && \
-    wget -O toolkit.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C19SPC703/Ascend-cann-toolkit_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
-    bash toolkit.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force && \
-    wget -O kernels.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C19SPC703/Ascend-cann-kernels-910b_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
-    bash kernels.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force && \
+    wget -O toolkit.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C20SPC703/Ascend-cann-toolkit_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
+    bash toolkit.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force  && \
+    wget -O kernels.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C20SPC703/Ascend-cann-kernels-910b_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
+    bash kernels.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force  && \
     rm -rf /tmp/ascend_tool
-
-# create python venv for py3-triton-x
-ARG PY3_TRITON_X=${VENV_PATH}/triton-x
-RUN python -m venv ${PY3_TRITON_X} && \
-    ${PY3_TRITON_X}/bin/pip install --upgrade pip && \
-    ${PY3_TRITON_X}/bin/pip3 install wheel setuptools ninja wheel pybind11  attrs==24.2.0 numpy==1.26.4 scipy==1.13.1 decorator==5.1.1 psutil==6.0.0 pytest==8.3.2 pytest-xdist==3.6.1 lit pandas matplotlib pyyaml einops
-
 ARG TORCH_PACKAGE=2.3.1
-RUN ${PY3_TRITON_X}/bin/pip3 install --extra-index-url https://download.pytorch.org/whl/cpu/ torch==${TORCH_PACKAGE}
+RUN pip3 install --extra-index-url https://download.pytorch.org/whl/cpu/ torch==${TORCH_PACKAGE}
 ARG TORCH_NPU_PACKAGE=https://gitee.com/ascend/pytorch/releases/download/v6.0.rc3-pytorch2.3.1/torch_npu-2.3.1.post2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
 RUN mkdir -p /tmp/torch_npu && cd /tmp/torch_npu && \
     wget --no-check-certificate ${TORCH_NPU_PACKAGE} && \
-    ${PY3_TRITON_X}/bin/pip3 install *.whl && \
+    pip3 install *.whl && \
     rm /tmp/torch_npu -rf
 
-RUN ${PY3_TRITON_X}/bin/pip3 install bytedance.triton --index-url https://bytedpypi.byted.org/simple && \
-    chmod 777 -R ${PY3_TRITON_X}
+# pip install torch and torch_npu
+RUN mkdir -p /tmp/torch && cd /tmp/torch && \
+    # . ${PY3_XLLM}/bin/activate && \
+    pip3 uninstall -y torch torch_npu && \
+    wget --no-check-certificate https://download.pytorch.org/whl/cpu/torch-2.3.1%2Bcpu-cp39-cp39-linux_x86_64.whl#sha256=a3cb8e61ba311cee1bb7463cbdcf3ebdfd071e2091e74c5785e3687eb02819f9 && \
+    pip3 install torch-2.3.1+cpu-cp39-cp39-linux_x86_64.whl && \
+    wget --no-check-certificate https://gitee.com/ascend/pytorch/releases/download/v6.0.0-pytorch2.3.1/torch_npu-2.3.1.post4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl && \
+    pip3 install torch_npu-2.3.1.post4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl && \
+    rm /tmp/torch -rf
 
-RUN echo "source $ASCEND_BASE/ascend-toolkit/set_env.sh\n\
-export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$ASCEND_BASE/driver/lib64/driver:$ASCEND_BASE/driver/lib64/common\n\
-export TRITON_NPU_COMPILER_PATH=$ASCEND_BASE/npu_compiler\n\
-source $APPS_PATH/venv/triton-x/bin/activate\n\
-" >> ~/.bashrc_ascend && \
-echo ". ~/.bashrc_ascend" >> ~/.bashrc && \
-# for codebase ci
-mv /bin/sh /bin/sh-bak && ln -s /bin/bash /bin/sh 
+# # install clang
+# RUN mkdir -p /tmp/clang && cd /tmp/clang && \
+#     git clone --depth=1 --branch release/20.x https://github.com/llvm/llvm-project.git && \
+#     cd llvm-project && \
+#     git fetch --unshallow && \
+#     mkdir build && \
+#     cd build && \
+#     cmake -DLLVM_ENABLE_PROJECTS=clang -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" ../llvm && \
+#     make -j$(nproc) clang && \
+#     make install && \
+#     rm /tmp/clang -rf
 
 # 设置sshd自启动
 CMD ["/usr/sbin/sshd", "-D"]

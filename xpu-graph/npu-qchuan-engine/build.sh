@@ -3,7 +3,8 @@ script_dir=$(cd $(dirname $0); pwd)
 cur_dir=`pwd`
 cd ${script_dir}
 
-type=devel # or runtime
+# type=devel # or runtime
+type=runtime # or runtime
 
 # 处理参数
 while getopts "t:" opt

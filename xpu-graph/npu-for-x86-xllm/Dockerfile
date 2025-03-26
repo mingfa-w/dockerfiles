@@ -22,6 +22,8 @@ RUN apt-get update && \
     apt-get install -y adduser sudo vim  tmux net-tools iputils-ping && \
     apt-get install -y wget gdb tree bash-completion curl sshpass locales openssh-server \
     clang lld lldb ninja-build ccache libssl-dev clang-format build-essential jq \
+    # for build gcc
+    bison flex texinfo gperf libtool patchutils bc zlib1g-dev libmpc-dev libmpfr-dev libgmp-dev libisl-dev autoconf automake libncurses5-dev libelf-dev gawk \
         > /dev/null && \
     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists && \
     locale-gen en_US.UTF-8 && \
@@ -51,9 +53,7 @@ RUN mkdir /tmp/cmake && cd /tmp/cmake && \
     rm -rf /tmp/cmake
 
 # install gcc
-RUN apt update && apt-get install -y build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libmpc-dev libmpfr-dev libgmp-dev libisl-dev autoconf automake libncurses5-dev libelf-dev > /dev/null && \
-    apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists && \
-    mkdir -p /opt/apps/ && cd /opt/apps && \
+RUN mkdir -p /tmp/gcc/ && cd /tmp/gcc/ && \
     wget https://ftp.gnu.org/gnu/gcc/gcc-9.5.0/gcc-9.5.0.tar.gz && \
     tar xvf gcc-9.5.0.tar.gz && \
     cd gcc-9.5.0 && \
@@ -61,28 +61,43 @@ RUN apt update && apt-get install -y build-essential bison flex texinfo gperf li
     ../configure --prefix=/usr/local/gcc-9.5.0 --enable-languages=c,c++ --disable-multilib && \
     make -j$(nproc) && \
     make install && \
-    rm -rf /opt/apps/gcc-9.5.0
-# RUN update-alternatives --install /usr/bin/gcc gcc /usr/local/gcc-9.5.0/bin/gcc 60 && \
-    # update-alternatives --install /usr/bin/g++ g++ /usr/local/gcc-9.5.0/bin/g++ 60 && \
-    # update-alternatives --config gcc && \
-    # update-alternatives --config g++
+    rm -rf /tmp/gcc/ && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/local/gcc-9.5.0/bin/gcc 60 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/local/gcc-9.5.0/bin/g++ 60 && \
+    update-alternatives --config gcc && \
+    update-alternatives --config g++
+
+# install glibc
+RUN apt update && apt install -y bison && \
+    mkdir /tmp/glibc && cd /tmp/glibc && \
+    wget https://ftp.gnu.org/gnu/glibc/glibc-2.29.tar.xz && \
+    tar -xf glibc-2.29.tar.xz && \
+    cd glibc-2.29 && mkdir build && cd build && \
+    unset LD_LIBRARY_PATH && \
+    ../configure --prefix=/usr/local --disable-sanity-checks && \
+    make -j$(nproc) && make install && \
+    cp /usr/local/lib/libm-2.29.so /lib/x86_64-linux-gnu/ && \
+    ln -sf /lib/x86_64-linux-gnu/libm-2.29.so /lib/x86_64-linux-gnu/libm.so.6 && \
+    rm -rf /tmp/glibc
 
 ENV PATH="/usr/local/bin:$PATH"
 
 # create python venv for xllm
-ARG PY3_XLLM=${VENV_PATH}/xllm
-RUN python -m venv ${PY3_XLLM} && \
-    . ${PY3_XLLM}/bin/activate && \
-    pip3 install --upgrade pip && \
-    pip3 install wheel setuptools ninja wheel pybind11
+# ARG PY3_XLLM=${VENV_PATH}/xllm
+# RUN python -m venv ${PY3_XLLM} && \
+#     . ${PY3_XLLM}/bin/activate && \
+#     pip3 install --upgrade pip && \
+RUN    pip3 install wheel setuptools ninja wheel pybind11
 # install torch and torch_npu
+COPY torch_npu-2.3.1.post5+gita612562-cp39-cp39-linux_x86_64.whl /tmp/
 RUN mkdir -p /tmp/torch && cd /tmp/torch && \
     # . ${PY3_XLLM}/bin/activate && \
     pip3 uninstall -y torch torch_npu && \
     wget --no-check-certificate https://download.pytorch.org/whl/cpu/torch-2.3.1%2Bcpu-cp39-cp39-linux_x86_64.whl#sha256=a3cb8e61ba311cee1bb7463cbdcf3ebdfd071e2091e74c5785e3687eb02819f9 && \
     pip3 install torch-2.3.1+cpu-cp39-cp39-linux_x86_64.whl && \
-    wget --no-check-certificate https://gitee.com/ascend/pytorch/releases/download/v6.0.0-pytorch2.3.1/torch_npu-2.3.1.post4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl && \
-    pip3 install torch_npu-2.3.1.post4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl && \
+    # wget --no-check-certificate https://gitee.com/ascend/pytorch/releases/download/v6.0.0-pytorch2.3.1/torch_npu-2.3.1.post4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl && \
+    # pip3 install torch_npu-2.3.1.post4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl && \
+    pip3 install torch_npu-2.3.1.post5+gita612562-cp39-cp39-linux_x86_64.whl && \
     pip3 install triton==2.0.0 xgrammar==0.1.11 openai==1.44.1 && \
     rm /tmp/torch -rf
 

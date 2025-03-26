@@ -4,7 +4,8 @@ type=$1
 target_arch=`arch`
 
 # image param
-version="0.1.0"
+# version="0.1.1"
+version="0.1.1"
 domain="hub.byted.org"
 namespace="tritonx"
 name="$type-deberta-ascend8.0.rc3-ubuntu20.04-${target_arch}"

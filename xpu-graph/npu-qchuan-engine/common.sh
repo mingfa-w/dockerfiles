@@ -5,10 +5,10 @@ type=runtime
 target_arch=`arch`
 
 # image param
-version="0.1.0"
+version="0.0.0"
 domain="hub.byted.org"
 namespace="tritonx"
-name="$type-ascend8.0.0.rc3-ubuntu20.04-${target_arch}-for-engine"
+name="$type-ascend8.0.0.alpha003-debian10-${target_arch}-for-engine"
 tag="$version"
 image="$domain/$namespace/$name:$tag"
 APPS_PATH="/opt/apps"
@@ -21,7 +21,7 @@ echo ======= $base_image =======
 base_image_param=" --build-arg APPS_PATH=$APPS_PATH --build-arg ARCH=$target_arch --build-arg BASE_IMAGE=$base_image "
 
 # ascend param
-ASCEND_CANN="8.0.0.RC3.alpha003"
+ASCEND_CANN="8.0.0.alpha003"
 ASCEND_BASE="/usr/local/Ascend"
 ascend_param=" --build-arg ASCEND_CANN=$ASCEND_CANN --build-arg ASCEND_BASE=$ASCEND_BASE "
 
