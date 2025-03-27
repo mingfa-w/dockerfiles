@@ -221,7 +221,8 @@ RUN  export LD_LIBRARY_PATH="/opt/tiger/cpp_tools/x86_64_x86_64_clang_1606/lib64
     pip3 install scikit-learn  && \
     pip3 install numpy==1.21.5  && \
     pip3 install zstandard  && \
-    pip3 install apex
+    pip3 install apex && \
+    pip3 install attrs
 
 # 设置sshd自启动
 CMD ["/usr/sbin/sshd", "-D"]
