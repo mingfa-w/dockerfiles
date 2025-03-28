@@ -5,10 +5,10 @@ target_arch=`arch`
 
 # image param
 # version="0.1.1"
-version="0.1.1"
+version="0.1.2"
 domain="hub.byted.org"
 namespace="tritonx"
-name="$type-deberta-ascend8.0.rc3-ubuntu20.04-${target_arch}"
+name="$type-deberta-8.0.0.alpha003-debain10-${target_arch}"
 tag="$version"
 image="$domain/$namespace/$name:$tag"
 APPS_PATH="/opt/apps"
