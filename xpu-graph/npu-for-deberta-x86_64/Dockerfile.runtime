@@ -101,8 +101,16 @@ RUN mkdir /tmp/ascend_tool && cd /tmp/ascend_tool && \
 #     sudo pip3 install *.whl && \
 #     sudo rm /tmp/torch_npu -rf
 
-# RUN pip3 install torch-npu==2.3.1
-
+RUN pip3 install torch==2.3.1+cpu  --index-url https://download.pytorch.org/whl/cpu
+RUN pip3 install torch-npu==2.3.1.post4 --extra-index-url https://mirrors.huaweicloud.com/repository/pypi/simple
+# RUN mkdir /opt/tiger/tmp && cd /opt/tiger/tmp && \
+#     git clone git@code.byted.org:nlp/ptx.git && \
+#     cd /opt/tiger/tmp/ptx/ && \
+#     pip3 install -e .
+# RUN cd /opt/tiger/tmp && \
+#     git clone https://github.com/BD-Seed-HHW/xpu_graph.git && \
+#     cd /opt/tiger/tmp/xpu_graph && \
+#     pip3 install -e .
 
 # # pip install 
 # RUN  pip3 install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 ||  pip3 install --no-cache-dir ipython==7.19.0 ipykernel==5.4.3 findspark jupyter_kernel_gateway && \
