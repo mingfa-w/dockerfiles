@@ -2,7 +2,7 @@
 script_dir=$(cd $(dirname $0); pwd)
 cur_dir=`pwd`
 cd ${script_dir}
-USER=tiger
+#USER=tiger
 CONTAINER_NAME=$USER
 STOP=0
 PORT=8006
@@ -88,16 +88,16 @@ if [ -z "$OLD_ID" ]; then
     CMD="docker run $docker_in_docker $docker_run_flag -t -d --name $CONTAINER_NAME $MOUNT_DIR_ASCEND -v $MOUNT_DIR:/host --tmpfs /tmp:exec --rm $image "
     echo CMD = $CMD
     ID=`$CMD`
-    # docker exec --user root $ID groupadd -f -g $GROUPID $GROUP
-    # docker exec --user root $ID adduser --shell /bin/bash --uid $UID --gecos '' --ingroup $GROUP --disabled-password --home /home/$USER --force-badname $USER
+    docker exec --user root $ID groupadd -f -g $GROUPID $GROUP
+    docker exec --user root $ID adduser --shell /bin/bash --uid $UID --gecos '' --ingroup $GROUP --disabled-password --home /home/$USER --force-badname $USER
     docker exec --user root $ID bash -c " mkdir -p /etc/sudoers.d"
     docker exec --user root $ID bash -c " echo $USER ALL=\(ALL\) NOPASSWD:ALL > /etc/sudoers.d/sudoers"
     docker exec --user root $ID bash -c " echo PermitRootLogin yes >> /etc/ssh/sshd_config"
     userPasswd="8uhb9ijn"
     echo -e "$userPasswd\n$userPasswd" | docker exec --user root -i $ID passwd $USER
-    # docker exec --user root $ID usermod -aG sudo $USER
-    # docker exec --user root $ID bash -c " echo $USER ALL=\(root\) NOPASSWD:ALL > /etc/sudoers"
-    # docker exec --user root $ID bash -c ' mkdir ~/.ssh; mkdir /tmp/ccache; ln -s /tmp/ccache ~/.ccache'
+    docker exec --user root $ID usermod -aG sudo $USER
+    docker exec --user root $ID bash -c " echo $USER ALL=\(root\) NOPASSWD:ALL > /etc/sudoers"
+    docker exec --user root $ID bash -c ' mkdir ~/.ssh; mkdir /tmp/ccache; ln -s /tmp/ccache ~/.ccache'
 
     docker exec --user $USER $ID bash -c "mkdir -p /home/$USER/.ssh"
     if [ -f ~/.ssh/authorized_keys ]; then

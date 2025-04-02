@@ -28,7 +28,7 @@ RUN apt-get update && \
     ninja-build ccache libssl-dev build-essential \
     libbz2-dev libssl-dev libffi-dev \
     # for build gcc
-    # bison flex texinfo gperf libtool patchutils bc zlib1g-dev libmpc-dev libmpfr-dev libgmp-dev libisl-dev autoconf automake libncurses5-dev libelf-dev \
+    bison flex texinfo gperf libtool patchutils bc zlib1g-dev libmpc-dev libmpfr-dev libgmp-dev libisl-dev autoconf automake libncurses5-dev libelf-dev \
     # for spack3
     # libffi-dev libsqlite3-dev build-essential zlib1g-dev libssl-dev zip unzip \
     # locales gcc cmake rinetd libtcmalloc-minimal4 graphviz git sudo zsh \
@@ -41,48 +41,48 @@ RUN apt-get update && \
     . /etc/bash_completion.d/git\n\
 fi\n\
 " >> /etc/profile
-config language
+#config language
 ENV LANG=C.UTF-8
 
-# # install gcc
-# RUN mkdir -p /tmp/gcc/ && cd /tmp/gcc/ && \
-#     wget https://ftp.gnu.org/gnu/gcc/gcc-9.5.0/gcc-9.5.0.tar.gz && \
-#     tar xvf gcc-9.5.0.tar.gz && \
-#     cd gcc-9.5.0 && \
-#     mkdir build && cd build && \
-#     ../configure --prefix=/usr/local/gcc-9.5.0 --enable-languages=c,c++ --disable-multilib && \
-#     make -j$(nproc) && \
-#     make install && \
-#     rm -rf /tmp/gcc/ && \
-#     update-alternatives --install /usr/bin/gcc gcc /usr/local/gcc-9.5.0/bin/gcc 60 && \
-#     update-alternatives --install /usr/bin/g++ g++ /usr/local/gcc-9.5.0/bin/g++ 60 && \
-#     update-alternatives --config gcc && \
-#     update-alternatives --config g++
+# install gcc
+RUN mkdir -p /tmp/gcc/ && cd /tmp/gcc/ && \
+    wget https://ftp.gnu.org/gnu/gcc/gcc-10.2.0/gcc-10.2.0.tar.gz && \
+    tar xvf gcc-10.2.0.tar.gz && \
+    cd gcc-10.2.0 && \
+    mkdir build && cd build && \
+    ../configure --prefix=/usr/local/gcc-10.2.0 --enable-languages=c,c++ --disable-multilib && \
+    make -j$(nproc) && \
+    make install && \
+    rm -rf /tmp/gcc/ && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/local/gcc-10.2.0/bin/gcc 60 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/local/gcc-10.2.0/bin/g++ 60 && \
+    update-alternatives --config gcc && \
+    update-alternatives --config g++
 
-# # install glibc
-# RUN apt update && apt install -y bison && \
-#     mkdir /tmp/glibc && cd /tmp/glibc && \
-#     wget https://ftp.gnu.org/gnu/glibc/glibc-2.29.tar.xz && \
-#     tar -xf glibc-2.29.tar.xz && \
-#     cd glibc-2.29 && mkdir build && cd build && \
-#     unset LD_LIBRARY_PATH && \
-#     ../configure --prefix=/usr/local --disable-sanity-checks && \
-#     make -j$(nproc) && make install && \
-#     cp /usr/local/lib/libm-2.29.so /lib/x86_64-linux-gnu/ && \
-#     ln -sf /lib/x86_64-linux-gnu/libm-2.29.so /lib/x86_64-linux-gnu/libm.so.6 && \
-#     rm -rf /tmp/glibc
+# install glibc
+RUN apt update && apt install -y bison && \
+    mkdir /tmp/glibc && cd /tmp/glibc && \
+    wget https://ftp.gnu.org/gnu/glibc/glibc-2.29.tar.xz && \
+    tar -xf glibc-2.29.tar.xz && \
+    cd glibc-2.29 && mkdir build && cd build && \
+    unset LD_LIBRARY_PATH && \
+    ../configure --prefix=/usr/local --disable-sanity-checks && \
+    make -j$(nproc) && make install && \
+    cp /usr/local/lib/libm-2.29.so /lib/x86_64-linux-gnu/ && \
+    ln -sf /lib/x86_64-linux-gnu/libm-2.29.so /lib/x86_64-linux-gnu/libm.so.6 && \
+    rm -rf /tmp/glibc
 
-# # install python3.9.19
-# RUN rm -rf /tmp/py39 && \
-#     mkdir -p /tmp/py39 && cd /tmp/py39 && \
-#     wget https://www.python.org/ftp/python/3.9.19/Python-3.9.19.tgz && \
-#     tar -xzf Python-3.9.19.tgz && \
-#     cd Python-3.9.19 && \
-#     mkdir build && cd build && \
-#     ../configure --prefix=/usr/local --enable-optimizations --with-ensurepip=install && \
-#     make -j$(nproc) && make -j$(nproc) install && \
-#     ln -sf /usr/local/bin/python3.9 /usr/bin/python3 && \
-#     ln -sf /usr/local/bin/python3.9 /usr/bin/python
+# install python3.11.2
+RUN rm -rf /tmp/py311 && \
+    mkdir -p /tmp/py311 && cd /tmp/py311 && \
+    wget https://www.python.org/ftp/python/3.11.2/Python-3.11.2.tgz && \
+    tar -xzf Python-3.11.2.tgz && \
+    cd Python-3.11.2 && \
+    mkdir build && cd build && \
+    ../configure --prefix=/usr/local --enable-optimizations --with-ensurepip=install && \
+    make -j$(nproc) && make -j$(nproc) install && \
+    ln -sf /usr/local/bin/python3.11 /usr/bin/python3 && \
+    ln -sf /usr/local/bin/python3.11 /usr/bin/python
 # ascend tools
 ARG ASCEND_CANN=8.0.0.alpha003
 RUN mkdir /tmp/ascend_tool && cd /tmp/ascend_tool && \
