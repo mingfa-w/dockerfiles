@@ -13,7 +13,8 @@ tag="$version.torch231.py311.cann8.0.0.alpha003.post4"
 image="$domain/$namespace/$name:$tag"
 APPS_PATH="/opt/apps"
 # base_image="hub.byted.org/base/lab.pytorch:e2e65bf1f8af8e432f378648d4d2bb67"
-base_image="hub.byted.org/base/lab.debian:latest"
+# base_image="hub.byted.org/base/lab.debian:latest"
+base_image="hub.byted.org/base/lab.pytorch2:2.3.1.py311.cu124.post4"
 if [ $type == "devel" ]; then
   name_devel=runtime-${name#*-}
   base_image=$domain/$namespace/$name_devel:$tag

@@ -44,52 +44,53 @@ fi\n\
 #config language
 ENV LANG=C.UTF-8
 
-# install gcc
-RUN mkdir -p /tmp/gcc/ && cd /tmp/gcc/ && \
-    wget https://ftp.gnu.org/gnu/gcc/gcc-10.2.0/gcc-10.2.0.tar.gz && \
-    tar xvf gcc-10.2.0.tar.gz && \
-    cd gcc-10.2.0 && \
-    mkdir build && cd build && \
-    ../configure --prefix=/usr/local/gcc-10.2.0 --enable-languages=c,c++ --disable-multilib && \
-    make -j$(nproc) && \
-    make install && \
-    rm -rf /tmp/gcc/ && \
-    update-alternatives --install /usr/bin/gcc gcc /usr/local/gcc-10.2.0/bin/gcc 60 && \
-    update-alternatives --install /usr/bin/g++ g++ /usr/local/gcc-10.2.0/bin/g++ 60 && \
-    update-alternatives --config gcc && \
-    update-alternatives --config g++
+# # install gcc
+# RUN mkdir -p /tmp/gcc/ && cd /tmp/gcc/ && \
+#     wget https://ftp.gnu.org/gnu/gcc/gcc-10.2.0/gcc-10.2.0.tar.gz && \
+#     tar xvf gcc-10.2.0.tar.gz && \
+#     cd gcc-10.2.0 && \
+#     mkdir build && cd build && \
+#     ../configure --prefix=/usr/local/gcc-10.2.0 --enable-languages=c,c++ --disable-multilib && \
+#     make -j$(nproc) && \
+#     make install && \
+#     rm -rf /tmp/gcc/ && \
+#     update-alternatives --install /usr/bin/gcc gcc /usr/local/gcc-10.2.0/bin/gcc 60 && \
+#     update-alternatives --install /usr/bin/g++ g++ /usr/local/gcc-10.2.0/bin/g++ 60 && \
+#     update-alternatives --config gcc && \
+#     update-alternatives --config g++
 
-# install glibc
-RUN apt update && apt install -y bison && \
-    mkdir /tmp/glibc && cd /tmp/glibc && \
-    wget https://ftp.gnu.org/gnu/glibc/glibc-2.29.tar.xz && \
-    tar -xf glibc-2.29.tar.xz && \
-    cd glibc-2.29 && mkdir build && cd build && \
-    unset LD_LIBRARY_PATH && \
-    ../configure --prefix=/usr/local --disable-sanity-checks && \
-    make -j$(nproc) && make install && \
-    cp /usr/local/lib/libm-2.29.so /lib/x86_64-linux-gnu/ && \
-    ln -sf /lib/x86_64-linux-gnu/libm-2.29.so /lib/x86_64-linux-gnu/libm.so.6 && \
-    rm -rf /tmp/glibc
+# # install glibc
+# RUN apt update && apt install -y bison && \
+#     mkdir /tmp/glibc && cd /tmp/glibc && \
+#     wget https://ftp.gnu.org/gnu/glibc/glibc-2.29.tar.xz && \
+#     tar -xf glibc-2.29.tar.xz && \
+#     cd glibc-2.29 && mkdir build && cd build && \
+#     unset LD_LIBRARY_PATH && \
+#     ../configure --prefix=/usr/local --disable-sanity-checks && \
+#     make -j$(nproc) && make install && \
+#     cp /usr/local/lib/libm-2.29.so /lib/x86_64-linux-gnu/ && \
+#     ln -sf /lib/x86_64-linux-gnu/libm-2.29.so /lib/x86_64-linux-gnu/libm.so.6 && \
+#     rm -rf /tmp/glibc
 
-# install python3.11.2
-RUN rm -rf /tmp/py311 && \
-    mkdir -p /tmp/py311 && cd /tmp/py311 && \
-    wget https://www.python.org/ftp/python/3.11.2/Python-3.11.2.tgz && \
-    tar -xzf Python-3.11.2.tgz && \
-    cd Python-3.11.2 && \
-    mkdir build && cd build && \
-    ../configure --prefix=/usr/local --enable-optimizations --with-ensurepip=install && \
-    make -j$(nproc) && make -j$(nproc) install && \
-    ln -sf /usr/local/bin/python3.11 /usr/bin/python3 && \
-    ln -sf /usr/local/bin/python3.11 /usr/bin/python
+# # install python3.11.2
+# RUN rm -rf /tmp/py311 && \
+#     mkdir -p /tmp/py311 && cd /tmp/py311 && \
+#     wget https://www.python.org/ftp/python/3.11.2/Python-3.11.2.tgz && \
+#     tar -xzf Python-3.11.2.tgz && \
+#     cd Python-3.11.2 && \
+#     mkdir build && cd build && \
+#     ../configure --prefix=/usr/local --enable-optimizations --with-ensurepip=install && \
+#     make -j$(nproc) && make -j$(nproc) install && \
+#     ln -sf /usr/local/bin/python3.11 /usr/bin/python3 && \
+#     ln -sf /usr/local/bin/python3.11 /usr/bin/python
+
 # ascend tools
 ARG ASCEND_CANN=8.0.0.alpha003
 RUN mkdir /tmp/ascend_tool && cd /tmp/ascend_tool && \
-    wget -O toolkit.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C20SPC703/Ascend-cann-toolkit_8.0.0.alpha003_linux-x86_64.run?response-content-type=application/octet-stream && \
-    bash toolkit.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force  && \
-    wget -O kernels.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C20SPC703/Ascend-cann-kernels-910b_8.0.0.alpha003_linux-x86_64.run?response-content-type=application/octet-stream && \
-    bash kernels.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force  && \
+    wget -O toolkit.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C20SPC703/Ascend-cann-toolkit_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
+    bash toolkit.run --quiet --install --install-path=${ASCEND_BASE} --install-for-all --force  && \
+    wget -O kernels.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C20SPC703/Ascend-cann-kernels-910b_${ASCEND_CANN}_linux-${ARCH}.run?response-content-type=application/octet-stream && \
+    bash kernels.run --quiet --install --install-path=${ASCEND_BASE} --install-for-all --force  && \
     rm -rf /tmp/ascend_tool
 
 # ARG TORCH_PACKAGE=https://download.pytorch.org/whl/cpu/torch-2.3.1%2Bcpu-cp311-cp311-linux_x86_64.whl#sha256=a272defe305dbd944aa28a91cc3db0f0149495b3ebec2e39723a7224fa05dc57
