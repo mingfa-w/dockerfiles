@@ -123,5 +123,15 @@ RUN pip3 install torch-npu==2.3.1.post4 --extra-index-url https://mirrors.huawei
 # RUN echo "Cmnd_Alias TIGER_COMMANDS = /usr/bin/svstat, /usr/bin/svc, /etc/init.d/nginx, /usr/bin/uwsgi, /usr/sbin/iotop, /sbin/setcap,/opt/tiger/bin/cgroups_root_util, /usr/sbin/tcpdump, /usr/bin/perf, /bin/echo_oom\ntiger ALL=(ALL) NOPASSWD: TIGER_COMMANDS" > /etc/sudoers.d/tiger
 # RUN echo "tiger ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/sudoers
 # 设置sshd自启动
+# config ascend env
+RUN echo "source $ASCEND_BASE/ascend-toolkit/set_env.sh\n\
+export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$ASCEND_BASE/driver/lib64/driver:$ASCEND_BASE/driver/lib64/common\n\
+export NPU_COMPILER_ROOT=$ASCEND_BASE/npu_compiler_aarch64\n\
+export HTTP_PROXY=http://sys-proxy-rd-relay.byted.org:8118\n\
+export HTTPS_PROXY=http://sys-proxy-rd-relay.byted.org:8118\n\
+export FTP_PROXY=http://sys-proxy-rd-relay.byted.org:8118\n\
+" >> ~/.bashrc_ascend && \
+echo ". ~/.bashrc_ascend" >> ~/.bashrc
+
 CMD ["/usr/sbin/sshd", "-D"]
 
