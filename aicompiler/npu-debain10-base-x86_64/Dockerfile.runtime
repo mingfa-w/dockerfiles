@@ -1,0 +1,139 @@
+ARG BASE_IMAGE=hub.byted.org/base/lab.debian:latest
+ARG ssh_prv_key
+ARG ssh_pub_key
+FROM ${BASE_IMAGE}
+ARG ASCEND_BASE=/usr/local/Ascend
+
+RUN echo "root:8uhb9ijn" | chpasswd
+EXPOSE 22
+
+ARG APPS_PATH=/opt/apps
+ARG CODE_PATH=${APPS_PATH}/code
+ARG VENV_PATH=${APPS_PATH}/venv
+ARG http_proxy
+ARG ftp_proxy
+ARG https_proxy
+ARG NPUC_VERSION=0.0.2
+ARG ARCH=aarch64
+ENV HTTP_PROXY=${http_proxy} \
+    HTTPS_PROXY=${http_proxy} \
+    FTP_PROXY=${http_proxy}
+
+RUN apt-get update && \
+    apt-get install -y apt-utils adduser sudo vim  tmux openssh-server net-tools iputils-ping software-properties-common && \
+    apt-get install -y python3-dbg libmpich-dev \
+    git python3-distutils python3-wheel python3-yaml python3-setuptools \
+    libssl-dev ninja-build libzstd-dev \
+    wget tree bash-completion curl sshpass locales \
+    ninja-build ccache libssl-dev build-essential \
+    libbz2-dev libssl-dev libffi-dev \
+    # for build gcc
+    bison flex texinfo gperf libtool patchutils bc zlib1g-dev libmpc-dev libmpfr-dev libgmp-dev libisl-dev autoconf automake libncurses5-dev libelf-dev \
+    # for spack3
+    # libffi-dev libsqlite3-dev build-essential zlib1g-dev libssl-dev zip unzip \
+    # locales gcc cmake rinetd libtcmalloc-minimal4 graphviz git sudo zsh \
+    # libcurl4-openssl-dev libsecret-1-0 \
+        > /dev/null && \
+    apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists && \
+    locale-gen en_US.UTF-8 && \
+    mkdir -p /var/run/sshd && \
+    echo "if [ -f /etc/bash_completion.d/git ]; then\n\
+    . /etc/bash_completion.d/git\n\
+fi\n\
+" >> /etc/profile
+#config language
+ENV LANG=C.UTF-8
+
+# install gcc
+RUN mkdir -p /tmp/gcc/ && cd /tmp/gcc/ && \
+    wget https://ftp.gnu.org/gnu/gcc/gcc-10.2.0/gcc-10.2.0.tar.gz && \
+    tar xvf gcc-10.2.0.tar.gz && \
+    cd gcc-10.2.0 && \
+    mkdir build && cd build && \
+    ../configure --prefix=/usr/local/gcc-10.2.0 --enable-languages=c,c++ --disable-multilib && \
+    make -j$(nproc) && \
+    make install && \
+    rm -rf /tmp/gcc/ && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/local/gcc-10.2.0/bin/gcc 60 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/local/gcc-10.2.0/bin/g++ 60 && \
+    update-alternatives --config gcc && \
+    update-alternatives --config g++
+
+# # install glibc
+# RUN apt update && apt install -y bison && \
+#     mkdir /tmp/glibc && cd /tmp/glibc && \
+#     wget https://ftp.gnu.org/gnu/glibc/glibc-2.29.tar.xz && \
+#     tar -xf glibc-2.29.tar.xz && \
+#     cd glibc-2.29 && mkdir build && cd build && \
+#     unset LD_LIBRARY_PATH && \
+#     ../configure --prefix=/usr/local --disable-sanity-checks && \
+#     make -j$(nproc) && make install && \
+#     cp /usr/local/lib/libm-2.29.so /lib/x86_64-linux-gnu/ && \
+#     ln -sf /lib/x86_64-linux-gnu/libm-2.29.so /lib/x86_64-linux-gnu/libm.so.6 && \
+#     rm -rf /tmp/glibc
+
+# install python3.11.2
+RUN rm -rf /tmp/py311 && \
+    mkdir -p /tmp/py311 && cd /tmp/py311 && \
+    wget https://www.python.org/ftp/python/3.11.2/Python-3.11.2.tgz && \
+    tar -xzf Python-3.11.2.tgz && \
+    cd Python-3.11.2 && \
+    mkdir build && cd build && \
+    ../configure --prefix=/usr/local --enable-optimizations --with-ensurepip=install && \
+    make -j$(nproc) && make -j$(nproc) install && \
+    ln -sf /usr/local/bin/python3.11 /usr/bin/python3 && \
+    ln -sf /usr/local/bin/python3.11 /usr/bin/python
+# ascend tools
+ARG ASCEND_CANN=8.0.0.alpha003
+RUN mkdir /tmp/ascend_tool && cd /tmp/ascend_tool && \
+    wget -O toolkit.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C20SPC703/Ascend-cann-toolkit_8.0.0.alpha003_linux-x86_64.run?response-content-type=application/octet-stream && \
+    bash toolkit.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force  && \
+    wget -O kernels.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/Milan-ASL/Milan-ASL%20V100R001C20SPC703/Ascend-cann-kernels-910b_8.0.0.alpha003_linux-x86_64.run?response-content-type=application/octet-stream && \
+    bash kernels.run --quiet --install --install-path=$ASCEND_BASE --install-for-all --force  && \
+    rm -rf /tmp/ascend_tool
+
+# ARG TORCH_PACKAGE=https://download.pytorch.org/whl/cpu/torch-2.3.1%2Bcpu-cp311-cp311-linux_x86_64.whl#sha256=a272defe305dbd944aa28a91cc3db0f0149495b3ebec2e39723a7224fa05dc57
+# # RUN pip3 install torch==2.4.0+cpu  --index-url https://download.pytorch.org/whl/cpu
+# ARG TORCH_NPU_PACKAGE=https://gitee.com/ascend/pytorch/releases/download/v6.0.0-pytorch2.3.1/torch_npu-2.3.1.post4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+# RUN sudo mkdir /tmp/torch_npu && cd /tmp/torch_npu && \
+#     sudo wget --no-check-certificate ${TORCH_NPU_PACKAGE} && \
+#     sudo wget --no-check-certificate ${TORCH_PACKAGE} && \
+#     sudo pip3 install *.whl && \
+#     sudo rm /tmp/torch_npu -rf
+
+RUN pip3 install torch==2.3.1+cpu  --index-url https://download.pytorch.org/whl/cpu
+RUN pip3 install torch-npu==2.3.1.post4 --extra-index-url https://mirrors.huaweicloud.com/repository/pypi/simple
+# RUN mkdir /opt/tiger/tmp && cd /opt/tiger/tmp && \
+#     git clone git@code.byted.org:nlp/ptx.git && \
+#     cd /opt/tiger/tmp/ptx/ && \
+#     pip3 install -e .
+# RUN cd /opt/tiger/tmp && \
+#     git clone https://github.com/BD-Seed-HHW/xpu_graph.git && \
+#     cd /opt/tiger/tmp/xpu_graph && \
+#     pip3 install -e .
+
+# # pip install 
+# RUN  pip3 install --no-cache-dir pyspark==3.0.1 py4j==0.10.9 ||  pip3 install --no-cache-dir ipython==7.19.0 ipykernel==5.4.3 findspark jupyter_kernel_gateway && \
+#     groupadd --non-unique -g 1001 yarn || true && useradd -g 1001 -u 1001 -k /root -m yarn || true && dpkg-reconfigure -f noninteractive tzdata && unset https_proxy http_proxy no_proxy  && echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su && \
+#     chgrp root /etc/passwd && chmod ug+rw /etc/passwd && rm -rf /root/.cache 
+#     # rm -rf /opt/spark3 && cp -rf /opt/tiger/spark3/spark-stable /opt/spark3 && rm -rf /var/cache/apt/* && rm -rf /var/lib/apt/lists/ 
+# #  WORKDIR /opt/spark3/work-dir 
+# #  RUN chmod g+w /opt/spark3/work-dir 
+# # for 
+# RUN echo "Cmnd_Alias TIGER_COMMANDS = /usr/bin/svstat, /usr/bin/svc, /etc/init.d/nginx, /usr/bin/uwsgi, /usr/sbin/iotop, /sbin/setcap,/opt/tiger/bin/cgroups_root_util, /usr/sbin/tcpdump, /usr/bin/perf, /bin/echo_oom\ntiger ALL=(ALL) NOPASSWD: TIGER_COMMANDS" > /etc/sudoers.d/tiger
+# RUN echo "tiger ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/sudoers
+# 设置sshd自启动
+
+
+# config ascend env
+RUN echo "source $ASCEND_BASE/ascend-toolkit/set_env.sh\n\
+export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$ASCEND_BASE/driver/lib64/driver:$ASCEND_BASE/driver/lib64/common\n\
+export NPU_COMPILER_ROOT=$ASCEND_BASE/npu_compiler_aarch64\n\
+export HTTP_PROXY=http://sys-proxy-rd-relay.byted.org:8118\n\
+export HTTPS_PROXY=http://sys-proxy-rd-relay.byted.org:8118\n\
+export FTP_PROXY=http://sys-proxy-rd-relay.byted.org:8118\n\
+" >> ~/.bashrc_ascend && \
+echo ". ~/.bashrc_ascend" >> ~/.bashrc
+
+CMD ["/usr/sbin/sshd", "-D"]
+
